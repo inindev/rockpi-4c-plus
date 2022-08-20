@@ -1,16 +1,18 @@
-From 97856464a55f2bab1a9171ff8139b3f9fdc97c3e Mon Sep 17 00:00:00 2001
+From 19257a84ec9a9f05bdfa55b4948191dadb96c39c Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
-Date: Mon, 15 Aug 2022 10:36:56 +0000
+Date: Sat, 20 Aug 2022 22:43:21 +0000
 Subject: [PATCH] rockchip: rk3399: Add rockpi-4c+ board support
 
 add initial support for rockpi-4c+ board
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
- arch/arm/dts/Makefile                    |   1 +
- arch/arm/dts/rk3399-rock-pi-4c-plus.dts  | 469 +++++++++++++++++++++++
- configs/rock-pi-4c-plus-rk3399_defconfig |  81 ++++
- 3 files changed, 551 insertions(+)
+ arch/arm/dts/Makefile                         |   1 +
+ .../dts/rk3399-rock-pi-4c-plus-u-boot.dtsi    |   7 +
+ arch/arm/dts/rk3399-rock-pi-4c-plus.dts       | 688 ++++++++++++++++++
+ configs/rock-pi-4c-plus-rk3399_defconfig      |  81 +++
+ 4 files changed, 777 insertions(+)
+ create mode 100644 arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi
  create mode 100644 arch/arm/dts/rk3399-rock-pi-4c-plus.dts
  create mode 100644 configs/rock-pi-4c-plus-rk3399_defconfig
 
@@ -26,40 +28,66 @@ index a7e0d9f6c0..bb5c1d07f2 100644
  	rk3399-rock960.dtb \
  	rk3399-rockpro64.dtb \
  	rk3399pro-rock-pi-n10.dtb
-diff --git a/arch/arm/dts/rk3399-rock-pi-4c-plus.dts b/arch/arm/dts/rk3399-rock-pi-4c-plus.dts
+diff --git a/arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi b/arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi
 new file mode 100644
-index 0000000000..0c5025001d
+index 0000000000..d9e4046386
 --- /dev/null
-+++ b/arch/arm/dts/rk3399-rock-pi-4c-plus.dts
-@@ -0,0 +1,469 @@
++++ b/arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi
+@@ -0,0 +1,7 @@
++// SPDX-License-Identifier: GPL-2.0+
 +/*
-+ * (C) Copyright 2016 Rockchip Electronics Co., Ltd
-+ * (C) Copyright 2021 Radxa Limited
-+ *
-+ * SPDX-License-Identifier:     GPL-2.0+
++ * Copyright (C) 2022 John Clark <inindev@gmail.com>
 + */
-+
-+/dts-v1/;
-+
-+#include <dt-bindings/input/linux-event-codes.h>
-+#include <dt-bindings/pwm/pwm.h>
-+#include "rk3399.dtsi"
 +
 +#include "rk3399-u-boot.dtsi"
 +#include "rk3399-sdram-lpddr4-100.dtsi"
+diff --git a/arch/arm/dts/rk3399-rock-pi-4c-plus.dts b/arch/arm/dts/rk3399-rock-pi-4c-plus.dts
+new file mode 100644
+index 0000000000..88b651fbef
+--- /dev/null
++++ b/arch/arm/dts/rk3399-rock-pi-4c-plus.dts
+@@ -0,0 +1,688 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (c) 2022 Fuzhou Rockchip Electronics Co., Ltd
++ * Copyright (c) 2022 Radxa Limited
++ */
++
++/dts-v1/;
++#include <dt-bindings/input/linux-event-codes.h>
++#include <dt-bindings/pwm/pwm.h>
++#include "rk3399.dtsi"
++#include "rk3399-opp.dtsi"
 +
 +/ {
 +	model = "Radxa ROCK Pi 4C+";
-+	compatible = "radxa,rockpi4c-plus","rockchip,rk3399";
++	compatible = "radxa,rockpi4c-plus", "radxa,rockpi4", "rockchip,rk3399";
 +
 +	aliases {
-+		mmc0 = &sdio0;
-+		mmc1 = &sdmmc;
-+		mmc2 = &sdhci;
++		mmc0 = &sdmmc;
++		mmc1 = &sdhci;
++		mmc2 = &sdio0;
 +	};
 +
 +	chosen {
 +		stdout-path = "serial2:1500000n8";
++	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++		status = "okay";
++
++		user-led1 {
++			gpios = <&gpio3 RK_PD4 GPIO_ACTIVE_LOW>;
++			linux,default-trigger = "default-on";
++			default-state = "on";
++		};
++
++		user-led2 {
++			gpios = <&gpio3 RK_PD5 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++			default-state = "on";
++		};
 +	};
 +
 +	vcc5v0_sys: vcc5v0-sys {
@@ -69,6 +97,30 @@ index 0000000000..0c5025001d
 +		regulator-boot-on;
 +		regulator-min-microvolt = <5000000>;
 +		regulator-max-microvolt = <5000000>;
++	};
++
++	vbus_host: vbus-host {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpio = <&gpio3 RK_PD6 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb1_en_oc>;
++		regulator-name = "vbus_host"; /* HOST-5V */
++		regulator-always-on;
++		regulator-boot-on;
++		vin-supply = <&vcc5v0_usb2>;
++	};
++
++	vbus_typec: vbus-typec {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpio = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb0_en_oc>;
++		regulator-name = "vbus_typec";
++		regulator-always-on;
++		regulator-boot-on;
++		vin-supply = <&vcc5v0_sys>;
 +	};
 +
 +	vcc_phy: vcc-phy-regulator {
@@ -85,102 +137,86 @@ index 0000000000..0c5025001d
 +		#clock-cells = <0>;
 +	};
 +
-+	adc-keys {
-+		compatible = "adc-keys";
-+		io-channels = <&saradc 1>;
-+		io-channel-names = "buttons";
-+		keyup-threshold-microvolt = <1800000>;
-+		u-boot,dm-spl;
-+		status = "okay";
++	sdio_pwrseq: sdio-pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		clocks = <&rk809 1>;
++		clock-names = "ext_clock";
++		pinctrl-names = "default";
++		pinctrl-0 = <&wifi_enable_h>;
 +
-+		volumeup-key {
-+			u-boot,dm-spl;
-+			linux,code = <KEY_VOLUMEUP>;
-+			label = "volume up";
-+			press-threshold-microvolt = <9>;
-+		};
++		/*
++		 * On the module itself this is one of these (depending
++		 * on the actual card populated):
++		 * - SDIO_RESET_L_WL_REG_ON
++		 * - PDN (power down when low)
++		 */
++		reset-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_LOW>;
 +	};
 +};
 +
-+&io_domains {
-+	status = "okay";
-+	bt656-supply = <&vcc_3v0>; /* bt656_gpio2ab_ms */
-+	audio-supply = <&vcca_1v8>; /* audio_gpio3d4a_ms */
-+	sdmmc-supply = <&vccio_sd>; /* sdmmc_gpio4b_ms */
-+	gpio1830-supply = <&vcc_3v0>; /* gpio1833_gpio4cd_ms */
++&cpu_l0 {
++	cpu-supply = <&vdd_cpu_l>;
 +};
 +
-+&pmu_io_domains {
-+	status = "okay";
-+	pmu1830-supply = <&vcc_3v0>;
++&cpu_l1 {
++	cpu-supply = <&vdd_cpu_l>;
 +};
 +
-+&uart2 {
-+	status = "okay";
++&cpu_l2 {
++	cpu-supply = <&vdd_cpu_l>;
 +};
 +
-+&saradc {
-+	status = "okay";
++&cpu_l3 {
++	cpu-supply = <&vdd_cpu_l>;
 +};
 +
-+&sdmmc {
-+	bus-width = <4>;
-+	status = "okay";
++&cpu_b0 {
++	cpu-supply = <&vdd_cpu_b>;
++};
++
++&cpu_b1 {
++	cpu-supply = <&vdd_cpu_b>;
 +};
 +
 +&emmc_phy {
 +	status = "okay";
 +};
 +
-+&sdhci {
-+	bus-width = <8>;
-+	mmc-hs400-1_8v;
-+	mmc-hs400-enhanced-strobe;
-+	non-removable;
-+	status = "okay";
-+};
-+
 +&gmac {
-+	phy-supply = <&vcc_phy>;
-+	phy-mode = "rgmii";
-+	clock_in_out = "input";
-+	snps,reset-gpio = <&gpio3 15 GPIO_ACTIVE_LOW>;
-+	snps,reset-active-low;
-+	/* Reset time is 20ms, 100ms for rtl8211f */
-+	snps,reset-delays-us = <0 20000 100000>;
 +	assigned-clocks = <&cru SCLK_RMII_SRC>;
 +	assigned-clock-parents = <&clkin_gmac>;
++	clock_in_out = "input";
++	phy-supply = <&vcc_phy>;
++	phy-mode = "rgmii";
 +	pinctrl-names = "default", "sleep";
 +	pinctrl-0 = <&rgmii_pins>;
 +	pinctrl-1 = <&rgmii_sleep_pins>;
-+	tx_delay = <0x28>;
-+	rx_delay = <0x11>;
++	snps,reset-gpio = <&gpio3 RK_PB7 GPIO_ACTIVE_LOW>;
++	snps,reset-active-low;
++	/* Reset time is 20ms, 100ms for rtl8211f */
++	snps,reset-delays-us = <0 20000 100000>;
++	tx_delay = <0x2a>;
++	rx_delay = <0x21>;
 +	status = "okay";
 +};
 +
 +&i2c0 {
 +	status = "okay";
-+	i2c-scl-rising-time-ns = <180>;
 +	i2c-scl-falling-time-ns = <30>;
++	i2c-scl-rising-time-ns = <180>;
 +	clock-frequency = <400000>;
 +
 +	rk809: pmic@20 {
 +		compatible = "rockchip,rk809";
 +		reg = <0x20>;
-+
 +		interrupt-parent = <&gpio1>;
 +		interrupts = <RK_PC5 IRQ_TYPE_LEVEL_LOW>;
-+		pinctrl-names = "default", "pmic-sleep",
-+				"pmic-power-off", "pmic-reset";
-+		pinctrl-0 = <&pmic_int_l>;
-+		pinctrl-1 = <&soc_slppin_slp>, <&rk809_slppin_slp>;
-+		pinctrl-2 = <&soc_slppin_gpio>, <&rk809_slppin_pwrdn>;
-+		pinctrl-3 = <&soc_slppin_gpio>, <&rk809_slppin_null>;
-+		rockchip,system-power-controller;
-+		pmic-reset-func = <0>;
-+		wakeup-source;
 +		#clock-cells = <1>;
 +		clock-output-names = "rk808-clkout1", "rk808-clkout2";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pmic_int_l>;
++		rockchip,system-power-controller;
++		wakeup-source;
 +
 +		vcc1-supply = <&vcc5v0_sys>;
 +		vcc2-supply = <&vcc5v0_sys>;
@@ -191,39 +227,6 @@ index 0000000000..0c5025001d
 +		vcc7-supply = <&vcc5v0_sys>;
 +		vcc8-supply = <&vcc3v3_sys>;
 +		vcc9-supply = <&vcc5v0_sys>;
-+
-+		pwrkey {
-+			status = "okay";
-+		};
-+
-+		rk809_rtc: rtc {
-+			status = "okay";
-+		};
-+
-+		pinctrl_rk8xx: pinctrl_rk8xx {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+
-+			rk809_slppin_null: rk809_slppin_null {
-+				pins = "gpio_slp";
-+				function = "pin_fun0";
-+			};
-+
-+			rk809_slppin_slp: rk809_slppin_slp {
-+				pins = "gpio_slp";
-+				function = "pin_fun1";
-+			};
-+
-+			rk809_slppin_pwrdn: rk809_slppin_pwrdn {
-+				pins = "gpio_slp";
-+				function = "pin_fun2";
-+			};
-+
-+			rk809_slppin_rst: rk809_slppin_rst {
-+				pins = "gpio_slp";
-+				function = "pin_fun3";
-+			};
-+		};
 +
 +		regulators {
 +			vdd_log: DCDC_REG1 {
@@ -461,43 +464,274 @@ index 0000000000..0c5025001d
 +	};
 +};
 +
-+&pinctrl {
-+	pmic {
-+		pmic_int_l: pmic-int-l {
-+			rockchip,pins =
-+				<1 RK_PC5 0 &pcfg_pull_up>;
-+		};
++&io_domains {
++	bt656-supply = <&vcc_3v0>; /* bt656_gpio2ab_ms */
++	audio-supply = <&vcca_1v8>; /* audio_gpio3d4a_ms */
++	sdmmc-supply = <&vccio_sd>; /* sdmmc_gpio4b_ms */
++	gpio1830-supply = <&vcc_3v0>; /* gpio1833_gpio4cd_ms */
++	status = "okay";
++};
 +
-+		vsel1_gpio: vsel1-gpio {
-+			rockchip,pins =
-+				<1 RK_PC1 0 &pcfg_pull_down>;
-+		};
++&pmu_io_domains {
++	pmu1830-supply = <&vcc_3v0>;
++	status = "okay";
++};
 +
-+		vsel2_gpio: vsel2-gpio {
-+			rockchip,pins =
-+				<1 RK_PB6 0 &pcfg_pull_down>;
-+		};
++&pcie0 {
++	ep-gpios = <&gpio1 RK_PA1 GPIO_ACTIVE_HIGH>;
++	num-lanes = <4>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pcie_clkreqnb_cpm>;
++	status = "okay";
++};
 +
-+		soc_slppin_gpio: soc-slppin-gpio {
-+			rockchip,pins =
-+				<1 RK_PA5 0 &pcfg_output_low>;
-+		};
++&pcie_phy {
++	status = "okay";
++};
 +
-+		soc_slppin_slp: soc-slppin-slp {
-+			rockchip,pins =
-+				<1 RK_PA5 1 &pcfg_pull_down>;
-+		};
++&sdmmc {
++	bus-width = <4>;
++	cap-mmc-highspeed;
++	cap-sd-highspeed;
++	card-detect-delay = <800>;
++	disable-wp;
++	num-slots = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&sdmmc_clk &sdmmc_cd &sdmmc_cmd &sdmmc_bus4>;
++	supports-sd;
++	vqmmc-supply = <&vccio_sd>;
++	status = "okay";
++};
 +
-+		soc_slppin_rst: soc-slppin-rst {
-+			rockchip,pins =
-+				<1 RK_PA5 2 &pcfg_pull_none>;
-+		};
++&sdio0 {
++	bus-width = <4>;
++	cap-sd-highspeed;
++	cap-sdio-irq;
++	disable-wp;
++	keep-power-in-suspend;
++	max-frequency = <200000000>;
++	mmc-pwrseq = <&sdio_pwrseq>;
++	non-removable;
++	num-slots = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&sdio0_bus4 &sdio0_cmd &sdio0_clk>;
++	sd-uhs-sdr104;
++	supports-sdio;
++	status = "okay";
++};
++
++&sdhci {
++	bus-width = <8>;
++	max-frequency = <150000000>;
++	mmc-hs400-1_8v;
++	mmc-hs400-enhanced-strobe;
++	non-removable;
++	supports-emmc;
++	status = "okay";
++};
++
++&tcphy0 {
++	status = "okay";
++};
++
++&tcphy1 {
++	status = "okay";
++};
++
++&u2phy0 {
++	status = "okay";
++
++	u2phy0_otg: otg-port {
++		status = "okay";
 +	};
 +
++	u2phy0_host: host-port {
++		phy-supply = <&vbus_host>;
++		status = "okay";
++	};
++};
++
++&u2phy1 {
++	status = "okay";
++
++	u2phy1_otg: otg-port {
++		status = "okay";
++	};
++
++	u2phy1_host: host-port {
++		phy-supply = <&vbus_host>;
++		status = "okay";
++	};
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0_xfer &uart0_cts &uart0_rts>;
++};
++
++&uart2 {
++	status = "okay";
++};
++
++&usb_host0_ehci {
++	status = "okay";
++};
++
++&usb_host0_ohci {
++	status = "okay";
++};
++
++&usb_host1_ehci {
++	status = "okay";
++};
++
++&usb_host1_ohci {
++	status = "okay";
++};
++
++&usbdrd3_0 {
++	status = "okay";
++};
++
++&usbdrd_dwc3_0 {
++	status = "okay";
++	dr_mode = "host";
++};
++
++&usbdrd3_1 {
++	status = "okay";
++};
++
++&usbdrd_dwc3_1 {
++	status = "okay";
++	dr_mode = "host";
++};
++
++&vopb {
++	status = "okay";
++};
++
++&vopb_mmu {
++	status = "okay";
++};
++
++&vopl {
++	status = "okay";
++};
++
++&vopl_mmu {
++	status = "okay";
++};
++
++&hdmi {
++	pinctrl-names = "default";
++	pinctrl-0 = <&hdmi_i2c_xfer>, <&hdmi_cec>;
++	status = "okay";
++};
++
++&hdmi_sound {
++	status = "okay";
++};
++
++&hdmi_in_vopb {
++	status = "okay";
++};
++
++&hdmi_in_vopl {
++	status = "disabled";
++};
++
++&i2c1 {
++	status = "okay";
++};
++
++&pinctrl {
 +	gmac {
 +		rgmii_sleep_pins: rgmii-sleep-pins {
 +			rockchip,pins =
 +				<3 RK_PB7 RK_FUNC_GPIO &pcfg_output_low>;
++		};
++	};
++
++	pcie {
++		pcie_drv: pcie-drv {
++			rockchip,pins =
++				<3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	pmic {
++		pmic_int_l: pmic-int-l {
++			rockchip,pins = <1 RK_PC5 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++
++		vsel1_gpio: vsel1-gpio {
++			rockchip,pins = <1 RK_PC1 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++
++		vsel2_gpio: vsel2-gpio {
++			rockchip,pins = <1 RK_PB6 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++	};
++
++	sdio0 {
++		sdio0_bus1: sdio0-bus1 {
++			rockchip,pins =
++				<2 RK_PC4 1 &pcfg_pull_up_20ma>;
++		};
++
++		sdio0_bus4: sdio0-bus4 {
++			rockchip,pins =
++				<2 RK_PC4 1 &pcfg_pull_up_20ma>,
++				<2 RK_PC5 1 &pcfg_pull_up_20ma>,
++				<2 RK_PC6 1 &pcfg_pull_up_20ma>,
++				<2 RK_PC7 1 &pcfg_pull_up_20ma>;
++		};
++
++		sdio0_cmd: sdio0-cmd {
++			rockchip,pins =
++				<2 RK_PD0 1 &pcfg_pull_up_20ma>;
++		};
++
++		sdio0_clk: sdio0-clk {
++			rockchip,pins =
++				<2 RK_PD1 1 &pcfg_pull_none_20ma>;
++		};
++	};
++
++	sdmmc {
++		sdmmc_bus4: sdmmc-bus4 {
++			rockchip,pins = <4 RK_PB0 1 &pcfg_pull_up_8ma>,
++					<4 RK_PB1 1 &pcfg_pull_up_8ma>,
++					<4 RK_PB2 1 &pcfg_pull_up_8ma>,
++					<4 RK_PB3 1 &pcfg_pull_up_8ma>;
++		};
++
++		sdmmc_clk: sdmmc-clk {
++			rockchip,pins = <4 RK_PB4 1 &pcfg_pull_none_18ma>;
++		};
++
++		sdmmc_cmd: sdmmc-cmd {
++			rockchip,pins = <4 RK_PB5 1 &pcfg_pull_up_8ma>;
++		};
++	};
++
++	sdio-pwrseq {
++		wifi_enable_h: wifi-enable-h {
++			rockchip,pins =
++				<0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	vbus_host {
++		usb1_en_oc: usb1-en-oc {
++			rockchip,pins = <3 RK_PD6 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
++	vbus_typec {
++		usb0_en_oc: usb0-en-oc {
++			rockchip,pins = <1 RK_PA3 RK_FUNC_GPIO &pcfg_pull_up>;
 +		};
 +	};
 +};
@@ -589,5 +823,5 @@ index 0000000000..95b53999f5
 +CONFIG_SPL_TINY_MEMSET=y
 +CONFIG_ERRNO_STR=y
 -- 
-2.35.1
+2.30.2
 
