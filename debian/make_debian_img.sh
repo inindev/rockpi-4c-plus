@@ -31,7 +31,7 @@ main() {
     local cache="cache.$deb_dist"
     local rtfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220708.tar.xz')
 #    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rk3399-rock-pi-4c-plus.dtb')
-     local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
+    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
 #    local uboot_rksd=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rksd_loader.img')
     local uboot_rksd='../uboot/rksd_loader.img'
 #    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/u-boot.itb')
@@ -309,7 +309,7 @@ script_phase2_setup_sh() {
 	apt update
 	apt -y full-upgrade
 	apt -y install linux-image-arm64 linux-headers-arm64 systemd-timesyncd
-	apt -y install openssh-server sudo wget unzip u-boot-tools
+	apt -y install openssh-server sudo wget u-boot-tools unzip xxd xz-utils
 
 	useradd -m "$uid" -p \$(echo "$pass" | openssl passwd -6 -stdin) -s /bin/bash
 	(umask 377 && echo "$uid ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$uid)
