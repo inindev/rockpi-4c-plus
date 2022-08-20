@@ -8,6 +8,7 @@ set -e
 #   2: download failure
 #   3: image mount failure
 #   4: missing file
+#   5: invalid file hash
 #   9: superuser required
 #
 
@@ -29,13 +30,19 @@ main() {
 
     echo "\n${h1}downloading files...${rst}"
     local cache="cache.$deb_dist"
-    local rtfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220708.tar.xz')
+    local lfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220815.tar.xz')
+    local lfwsha='0410ef41663a9d71959ac7241b6e487359c252c3b78db0a974f61d480745e0f9'
 #    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rk3399-rock-pi-4c-plus.dtb')
     local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
 #    local uboot_rksd=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rksd_loader.img')
     local uboot_rksd='../uboot/rksd_loader.img'
 #    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/u-boot.itb')
     local uboot_itb='../uboot/u-boot.itb'
+
+    if [ "$lfwsha" != $(sha256sum "$lfw" | cut -c1-64) ]; then
+        echo "invalid hash for linux firmware: $lfw"
+        exit 5
+    fi
 
     if [ ! -f "$dtb" ]; then
         echo "device tree binary is missing: $dtb"
@@ -90,9 +97,9 @@ main() {
     ln -s $(basename "$dtb") "$mountpt/boot/dtb"
 
     echo "\n${h1}installing realtek firmware...${rst}"
-    local rtfwn=$(basename "$rtfw")
+    local lfwn=$(basename "$lfw")
     mkdir -p "$mountpt/lib/firmware"
-    tar -C "$mountpt/lib/firmware" --strip-components=1 -xJvf "$rtfw" ${rtfwn%%.*}/rtl_nic
+    tar -C "$mountpt/lib/firmware" --strip-components=1 -xJvf "$lfw" ${lfwn%%.*}/rtl_nic
 
     echo "\n${h1}phase 2: chroot setup...${rst}"
     local p2s_dir="$mountpt/tmp/phase2_setup"
