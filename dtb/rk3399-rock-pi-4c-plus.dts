@@ -415,6 +415,10 @@
 	};
 };
 
+&i2c1 {
+	status = "okay";
+};
+
 &io_domains {
 	bt656-supply = <&vcc_3v0>; /* bt656_gpio2ab_ms */
 	audio-supply = <&vcca_1v8>; /* audio_gpio3d4a_ms */
@@ -437,6 +441,10 @@
 };
 
 &pcie_phy {
+	status = "okay";
+};
+
+&pwm3 {
 	status = "okay";
 };
 
@@ -479,6 +487,33 @@
 	non-removable;
 	supports-emmc;
 	status = "okay";
+};
+
+&spi1 {
+	max-freq = <10000000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	spiflash: spi-flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0x0>;
+		spi-max-frequency = <10000000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			loader@0 {
+				label = "loader";
+				reg = <0x0 0x400000>;
+			};
+		};
+	};
 };
 
 &tcphy0 {
@@ -541,12 +576,13 @@
 };
 
 &usbdrd3_0 {
+	extcon = <&u2phy0>;
 	status = "okay";
 };
 
 &usbdrd_dwc3_0 {
+	dr_mode = "otg";
 	status = "okay";
-	dr_mode = "host";
 };
 
 &usbdrd3_1 {
@@ -554,8 +590,8 @@
 };
 
 &usbdrd_dwc3_1 {
-	status = "okay";
 	dr_mode = "host";
+	status = "okay";
 };
 
 &vopb {
@@ -590,10 +626,6 @@
 
 &hdmi_in_vopl {
 	status = "disabled";
-};
-
-&i2c1 {
-	status = "okay";
 };
 
 &pinctrl {

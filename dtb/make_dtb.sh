@@ -34,7 +34,7 @@ main() {
 
     # build
     gcc -I "linux-$lv/include" -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp -o rk3399-rock-pi-4c-plus-top.dts "$lrcp/rk3399-rock-pi-4c-plus.dts"
-    dtc -O dtb -o rk3399-rock-pi-4c-plus.dtb rk3399-rock-pi-4c-plus-top.dts
+    dtc -@ -I dts -O dtb -o rk3399-rock-pi-4c-plus.dtb rk3399-rock-pi-4c-plus-top.dts
 
     echo '\nbuild complete: rk3399-rock-pi-4c-plus.dtb\n'
 }
