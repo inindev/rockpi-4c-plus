@@ -175,7 +175,7 @@ format_media() {
 	label: gpt
 	unit: sectors
 	first-lba: 2048
-	part1: start=32768, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4
+	part1: start=32768, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=rootfs
 	EOF
     sync
 
@@ -315,8 +315,8 @@ script_phase2_setup_sh() {
 
 	apt update
 	apt -y full-upgrade
-	apt -y install linux-image-arm64 linux-headers-arm64 systemd-timesyncd
-	apt -y install openssh-server sudo wget u-boot-tools unzip xxd xz-utils
+	apt -y install linux-image-arm64 linux-headers-arm64 openssh-server systemd-timesyncd
+	apt -y install pciutils sudo wget u-boot-tools xxd xz-utils zip unzip
 
 	useradd -m "$uid" -p \$(echo "$pass" | openssl passwd -6 -stdin) -s /bin/bash
 	(umask 377 && echo "$uid ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$uid)
