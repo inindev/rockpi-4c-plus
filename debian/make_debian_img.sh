@@ -34,8 +34,8 @@ main() {
     local lfwsha='0410ef41663a9d71959ac7241b6e487359c252c3b78db0a974f61d480745e0f9'
 #    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rk3399-rock-pi-4c-plus.dtb')
     local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
-#    local uboot_rksd=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rksd_loader.img')
-    local uboot_rksd='../uboot/rksd_loader.img'
+#    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/idbloader.img')
+    local uboot_spl='../uboot/idbloader.img'
 #    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/u-boot.itb')
     local uboot_itb='../uboot/u-boot.itb'
 
@@ -49,8 +49,8 @@ main() {
         exit 4
     fi
 
-    if [ ! -f "$uboot_rksd" -o ! -f "$uboot_itb" ]; then
-        echo "uboot binary is missing: $uboot_rksd and/or $uboot_itb"
+    if [ ! -f "$uboot_spl" -o ! -f "$uboot_itb" ]; then
+        echo "uboot binary is missing: $uboot_spl and/or $uboot_itb"
         exit 4
     fi
 
@@ -136,7 +136,7 @@ main() {
     rm -rf "$mountpt"
 
     echo "\n${h1}installing u-boot...${rst}"
-    dd bs=4K seek=8 if="$uboot_rksd" of="$media" conv=notrunc
+    dd bs=4K seek=8 if="$uboot_spl" of="$media" conv=notrunc
     dd bs=4K seek=2048 if="$uboot_itb" of="$media" conv=notrunc
     sync
 
