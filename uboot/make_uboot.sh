@@ -45,14 +45,16 @@ cp u-boot/idbloader.img .
 cp u-boot/u-boot.itb .
 
 # outputs: idbloader-spi.img & u-boot.itb
+make -C u-boot distclean
 make -C u-boot rock-pi-4c-plus-rk3399_spiflash_defconfig
 make -C u-boot -j$(nproc) BL31=$atf_file
 u-boot/tools/mkimage -n rk3399 -T rkspi -d u-boot/tpl/u-boot-tpl.bin:u-boot/spl/u-boot-spl.bin idbloader-spi.img
+cp u-boot/u-boot.itb u-boot-spi.itb
 
 # make spi image file
 #dd bs=64K count=64 if=/dev/zero | tr '\000' '\377' > rockpi-4cplus-uboot-spi.img
 #dd bs=4K seek=8 if=u-boot/idbloader-spi.img of=rockpi-4cplus-uboot-spi.img conv=notrunc
-#dd bs=4K seek=512 if=u-boot/u-boot.itb of=rockpi-4cplus-uboot-spi.img conv=notrunc
+#dd bs=4K seek=512 if=u-boot/u-boot-spi.itb of=rockpi-4cplus-uboot-spi.img conv=notrunc
 
 echo '\nidb loader and u-boot binaries are now ready'
 echo '\ncopy images to media:'
@@ -63,5 +65,5 @@ echo 'flash to spi (optional):'
 echo '  flash_erase /dev/mtd0 0 0'
 echo '  nandwrite /dev/mtd0 idbloader-spi.img'
 echo '  flash_erase /dev/mtd2 0 0'
-echo '  nandwrite /dev/mtd2 u-boot.itb'
+echo '  nandwrite /dev/mtd2 u-boot-spi.itb'
 echo
