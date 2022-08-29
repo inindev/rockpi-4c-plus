@@ -10,10 +10,12 @@
 	chosen {
 		u-boot,spl-boot-order = "same-as-spl", &spi_flash, &sdhci, &sdmmc;
 	};
+
+        config {
+                u-boot,spl-payload-offset = <0x200000>;
+        };
 };
 
-&spi1 {
-	spi_flash: flash@0 {
-		u-boot,dm-pre-reloc;
-	};
+&spi_flash {
+        u-boot,dm-pre-reloc;
 };
