@@ -8,7 +8,7 @@ atf_file=$(basename $atf_url)
 
 
 if [ 'clean' = "$1" ]; then
-    rm -f idbloader*.img u-boot.itb
+    rm -f idbloader*.img u-boot*.itb
 #    rm -f u-boot/rk3399_bl31.elf
     make -C u-boot distclean
     git -C u-boot clean -f
