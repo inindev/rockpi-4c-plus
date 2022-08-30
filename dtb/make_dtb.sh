@@ -9,7 +9,7 @@ main() {
     local lv='5.18.17'
 
     if [ 'clean' = "$1" ]; then
-        rm -f rk3399*
+        rm -f *.dtb *-top.dts
         rm -rf "linux-$lv"
         echo '\nclean complete\n'
         exit 0
