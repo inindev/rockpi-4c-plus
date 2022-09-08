@@ -32,12 +32,12 @@ main() {
     local cache="cache.$deb_dist"
     local lfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220815.tar.xz')
     local lfwsha='0410ef41663a9d71959ac7241b6e487359c252c3b78db0a974f61d480745e0f9'
-#    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rk3399-rock-pi-4c-plus.dtb')
-    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
-#    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/idbloader.img')
-    local uboot_spl='../uboot/idbloader.img'
-#    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/u-boot.itb')
-    local uboot_itb='../uboot/u-boot.itb'
+    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/rk3399-rock-pi-4c-plus.dtb')
+#    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
+    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/idbloader.img')
+#    local uboot_spl='../uboot/idbloader.img'
+    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/u-boot.itb')
+#    local uboot_itb='../uboot/u-boot.itb'
 
     if [ "$lfwsha" != $(sha256sum "$lfw" | cut -c1-64) ]; then
         echo "invalid hash for linux firmware: $lfw"
