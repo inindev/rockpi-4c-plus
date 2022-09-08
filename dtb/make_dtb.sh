@@ -6,7 +6,7 @@ set -e
 # kernel.org linux version
 
 main() {
-    local lv='5.18.19'
+    local lv='5.19.8'
 
     if [ 'clean' = "$1" ]; then
         rm -f *.dtb *-top.dts
