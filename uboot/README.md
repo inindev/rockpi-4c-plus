@@ -9,7 +9,7 @@
 sh make_uboot.sh
 ```
 
-<i>the build will produce the target files idbloader.img, idbloader-spi.img, and u-boot.itb</i>
+<i>the build will produce the target files idbloader.img, idbloader-spi.img, u-boot.itb, and u-boot-spi.itb</i>
 
 <br/>
 
@@ -24,10 +24,12 @@ sync
 
 **3. optional: flash to spi**
 ```
+apt install mtd-utils
+
 flash_erase /dev/mtd0 0 0
 nandwrite /dev/mtd0 idbloader-spi.img
 flash_erase /dev/mtd2 0 0
-nandwrite /dev/mtd2 u-boot.itb
+nandwrite /dev/mtd2 u-boot-spi.itb
 ```
 
 <br/>
