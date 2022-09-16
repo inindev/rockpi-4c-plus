@@ -30,8 +30,8 @@ main() {
 
     echo "\n${h1}downloading files...${rst}"
     local cache="cache.$deb_dist"
-    local lfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220815.tar.xz')
-    local lfwsha='0410ef41663a9d71959ac7241b6e487359c252c3b78db0a974f61d480745e0f9'
+    local lfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220913.tar.xz')
+    local lfwsha='26fd00f2d8e96c4af6f44269a6b893eb857253044f75ad28ef6706a2250cd8e9'
     local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/rk3399-rock-pi-4c-plus.dtb')
 #    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
     local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/idbloader.img')
@@ -96,10 +96,10 @@ main() {
     install -m 644 "$dtb" "$mountpt/boot"
     ln -s $(basename "$dtb") "$mountpt/boot/dtb"
 
-    echo "\n${h1}installing realtek firmware...${rst}"
+    echo "\n${h1}installing firmware...${rst}"
     local lfwn=$(basename "$lfw")
     mkdir -p "$mountpt/lib/firmware"
-    tar -C "$mountpt/lib/firmware" --strip-components=1 -xJvf "$lfw" ${lfwn%%.*}/rtl_nic
+    tar -C "$mountpt/lib/firmware" --strip-components=1 -xJvf "$lfw" "${lfwn%%.*}/rockchip" "${lfwn%%.*}/rtl_nic"
 
     echo "\n${h1}phase 2: chroot setup...${rst}"
     local p2s_dir="$mountpt/tmp/phase2_setup"
