@@ -27,6 +27,7 @@ if ! git -C u-boot branch | grep -q uboot-$tag; then
     git -C u-boot checkout -b uboot-$tag $tag
         cp -v files/rock-pi-4c-plus-rk3399_defconfig u-boot/configs
         cp -v files/rock-pi-4c-plus-rk3399_spiflash_defconfig u-boot/configs
+        cp -v files/rk3399-t-opp.dtsi u-boot/arch/arm/dts
         cp -v files/rk3399-rock-pi-4c-plus.dts u-boot/arch/arm/dts
         cp -v files/rk3399-rock-pi-4c-plus-u-boot.dtsi u-boot/arch/arm/dts
 elif [ uboot-$tag != "$(git -C u-boot branch | sed -n -e 's/^\* \(.*\)/\1/p')" ]; then

@@ -22,7 +22,7 @@ main() {
     local lrcp="linux-$lv/arch/arm64/boot/dts/rockchip"
     if [ ! -d "linux-$lv" ]; then
         tar "xavf" "linux-$lv.tar.xz" "linux-$lv/include/dt-bindings" "linux-$lv/include/uapi" "$lrcp"
-        ln -s '../../../../../../rk3399.dtsi' "$lrcp"
+        ln -s '../../../../../../rk3399-t-opp.dtsi' "$lrcp"
         ln -s '../../../../../../rk3399-rock-pi-4c-plus.dts' "$lrcp"
     fi
 
