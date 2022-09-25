@@ -6,7 +6,7 @@ set -e
 # kernel.org linux version
 
 main() {
-    local lv='5.19.8'
+    local lv='5.19.11'
 
     if [ 'clean' = "$1" ]; then
         rm -f *.dtb *-top.dts
@@ -22,13 +22,13 @@ main() {
     local lrcp="linux-$lv/arch/arm64/boot/dts/rockchip"
     if [ ! -d "linux-$lv" ]; then
         tar "xavf" "linux-$lv.tar.xz" "linux-$lv/include/dt-bindings" "linux-$lv/include/uapi" "$lrcp"
+        ln -s '../../../../../../rk3399.dtsi' "$lrcp"
         ln -s '../../../../../../rk3399-rock-pi-4c-plus.dts' "$lrcp"
     fi
 
     if [ 'links' = "$1" ]; then
         ln -sf "$lrcp/rk3399.dtsi"
-        ln -sf "$lrcp/rk3399-opp.dtsi"
-        echo '\nlinks created\n'
+        echo '\nlink created\n'
         exit 0
     fi
 

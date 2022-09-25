@@ -16,7 +16,7 @@ sh make_dtb.sh
 sh make_dtb.sh links
 ```
 
-<i>convenience links to rk3399.dtsi and rk3399-opp.dtsi will be created in the project directory</i>
+<i>convenience link to rk3399.dtsi will be created in the project directory</i>
 
 <br/>
 
