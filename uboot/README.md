@@ -32,6 +32,8 @@ flash_erase /dev/mtd2 0 0
 nandwrite /dev/mtd2 u-boot-spi.itb
 ```
 
+<i><sub><b>The flash_erase operations take up to a minute and the % progress does not update along the way. The idbloader write is 84 blocks, and the u-boot write is 268 blocks.</b></sub></i>
+
 <br/>
 
 **4. optional: clean target**
