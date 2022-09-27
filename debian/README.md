@@ -24,7 +24,6 @@ sudo sh -c 'xzcat mmc_2g.img.xz > /dev/sdX && sync'
 **multiple build options are available by editing make_debian_img.sh**
 ```
 media='mmc_2g.img' # or block device '/dev/sdX'
-mountpt='rootfs'
 deb_dist='bookworm'
 hostname='deb-arm64'
 acct_uid='debian'
