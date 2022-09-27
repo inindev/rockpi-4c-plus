@@ -2,33 +2,34 @@
 
 set -e
 
-#
-# script exit codes:
-#   1: missing utility
-#   2: download failure
-#   3: image mount failure
-#   4: missing file
-#   5: invalid file hash
-#   9: superuser required
-#
 
 main() {
     # file media is sized with the number between 'mmc_' and '.img'
     #   use 'm' for 1024^2 and 'g' for 1024^3
     local media='mmc_2g.img' # or block device '/dev/sdX'
-    local mountpt='rootfs'
     local deb_dist='bookworm'
     local hostname='deb-arm64'
     local acct_uid='debian'
     local acct_pass='debian'
     local disable_ipv6='true'
+    local extra_pkgs='pciutils, sudo, wget, u-boot-tools, xxd, xz-utils, zip, unzip'
+
+    #
+    # script exit codes:
+    #   1: missing utility
+    #   2: download failure
+    #   3: image mount failure
+    #   4: missing file
+    #   5: invalid file hash
+    #   9: superuser required
+    #
 
     # no compression if disabled or block media
     local compress=$([ "nocomp" = "$1" -o -b "$media" ] && echo false || echo true)
 
-    check_installed 'debootstrap' 'u-boot-tools' 'pv' 'wget' 'xz-utils'
+    check_installed 'debootstrap' 'u-boot-tools' 'wget' 'xz-utils'
 
-    echo "\n${h1}downloading files...${rst}"
+    print_hdr "downloading files"
     local cache="cache.$deb_dist"
     local lfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220913.tar.xz')
     local lfwsha='26fd00f2d8e96c4af6f44269a6b893eb857253044f75ad28ef6706a2250cd8e9'
@@ -55,12 +56,16 @@ main() {
     fi
 
     if [ ! -b "$media" ]; then
-        echo "\n${h1}creating image file...${rst}"
+        print_hdr "creating image file"
         make_image_file "$media"
     fi
 
-    echo "\n${h1}formatting media...${rst}"
+    print_hdr "partitioning media"
+    parition_media "$media"
+
+    print_hdr "formatting media"
     format_media "$media"
+
     mount_media "$media" "$mountpt"
 
     # do not write the cache to the image
@@ -69,11 +74,17 @@ main() {
     mount -o bind "$cache/var/cache" "$mountpt/var/cache"
     mount -o bind "$cache/var/lib/apt/lists" "$mountpt/var/lib/apt/lists"
 
-    echo "${h1}installing root filesystem...${rst}"
-    debootstrap --arch arm64 "$deb_dist" "$mountpt" 'https://deb.debian.org/debian/'
-
-    echo "\n${h1}configuring files...${rst}"
+    # install debian linux from official repo packages
+    print_hdr "installing root filesystem from debian.org"
+    mkdir "$mountpt/etc"
     echo 'link_in_boot = 1' > "$mountpt/etc/kernel-img.conf"
+    local pkgs="linux-image-arm64, linux-headers-arm64, openssh-server, systemd-timesyncd, $extra_pkgs"
+    debootstrap --arch arm64 --include "$pkgs" "$deb_dist" "$mountpt" 'https://deb.debian.org/debian/'
+
+    umount "$mountpt/var/cache"
+    umount "$mountpt/var/lib/apt/lists"
+
+    print_hdr "configuring files"
     echo "$(file_apt_sources $deb_dist)\n" > "$mountpt/etc/apt/sources.list"
     echo "$(file_net_iface)\n" > "$mountpt/etc/network/interfaces"
     echo "$(file_locale_cfg)\n" > "$mountpt/etc/default/locale"
@@ -89,6 +100,7 @@ main() {
     sed -i "s/# alias ls='ls \$LS_OPTIONS'/alias ls='ls \$LS_OPTIONS'/" "$mountpt/root/.bashrc"
     sed -i "s/# alias ll='ls \$LS_OPTIONS -l'/alias ll='ls \$LS_OPTIONS -l'/" "$mountpt/root/.bashrc"
 
+    # setup /boot
     echo "$(script_boot_txt $disable_ipv6)\n" > "$mountpt/boot/boot.txt"
     mkimage -A arm64 -O linux -T script -C none -n 'u-boot boot script' -d "$mountpt/boot/boot.txt" "$mountpt/boot/boot.scr"
     echo "$(script_mkscr_sh)\n" > "$mountpt/boot/mkscr.sh"
@@ -96,57 +108,45 @@ main() {
     install -m 644 "$dtb" "$mountpt/boot"
     ln -s $(basename "$dtb") "$mountpt/boot/dtb"
 
-    echo "\n${h1}installing firmware...${rst}"
+    print_hdr "installing firmware"
     local lfwn=$(basename "$lfw")
     mkdir -p "$mountpt/lib/firmware"
-    tar -C "$mountpt/lib/firmware" --strip-components=1 -xJvf "$lfw" "${lfwn%%.*}/rockchip" "${lfwn%%.*}/rtl_nic"
+    tar -C "$mountpt/lib/firmware" --strip-components=1 -xavf "$lfw" "${lfwn%%.*}/rockchip" "${lfwn%%.*}/rtl_nic"
 
-    echo "\n${h1}phase 2: chroot setup...${rst}"
-    local p2s_dir="$mountpt/tmp/phase2_setup"
-    mkdir -p "$p2s_dir"
-    cp -r first_boot "$p2s_dir"
-    if [ -b "$media" ]; then
-        # expansion not needed for block media
-        rm -f "$p2s_dir/first_boot/scripts.d/boot1/90_expand_rootfs.sh"
-    fi
-    echo "$(script_phase2_setup_sh $acct_uid $acct_pass)\n" > "$p2s_dir/phase2_setup.sh"
+    print_hdr "creating user account"
+    chroot "$mountpt" /usr/sbin/useradd -m $acct_uid -s /bin/bash
+    chroot "$mountpt" /bin/sh -c "/usr/bin/echo $acct_uid:$acct_pass | /usr/sbin/chpasswd -c YESCRYPT"
+    chroot "$mountpt" /usr/bin/passwd -e $acct_uid
+    (umask 377 && echo "$acct_uid ALL=(ALL) NOPASSWD: ALL" > "$mountpt/etc/sudoers.d/$acct_uid")
 
-    mount -t proc '/proc' "$mountpt/proc"
-    mount -t sysfs '/sys' "$mountpt/sys"
-    mount -o bind '/dev' "$mountpt/dev"
-    mount -o bind '/dev/pts' "$mountpt/dev/pts"
-    chroot "$mountpt" '/bin/sh' '/tmp/phase2_setup/phase2_setup.sh'
-    umount "$mountpt/dev/pts"
-    umount "$mountpt/dev"
-    umount "$mountpt/sys"
-    umount "$mountpt/proc"
-    umount "$mountpt/var/cache"
-    umount "$mountpt/var/lib/apt/lists"
+    # extra setup for non-block media
+    if [ ! -b "$media" ]; then
+        print_hdr "installing rootfs expansion script to /etc/rc.local"
+        echo "$(script_rc_local)\n" > "$mountpt/etc/rc.local"
+        chmod 754 "$mountpt/etc/rc.local"
 
-    rm -rf "$p2s_dir"
-
-    if $compress; then
         # reduce entropy in free space to enhance compression
-        cat /dev/zero > "$mountpt/tmp/zero.bin" 2> /dev/null || true
-        sync
-        rm -f "$mountpt/tmp/zero.bin"
+        if $compress; then
+            print_hdr "removing entropy before compression"
+            cat /dev/zero > "$mountpt/tmp/zero.bin" 2> /dev/null || true
+            sync
+            rm -f "$mountpt/tmp/zero.bin"
+        fi
     fi
 
     umount "$mountpt"
     rm -rf "$mountpt"
 
-    echo "\n${h1}installing u-boot...${rst}"
+    print_hdr "installing u-boot"
     dd bs=4K seek=8 if="$uboot_spl" of="$media" conv=notrunc
     dd bs=4K seek=2048 if="$uboot_itb" of="$media" conv=notrunc
     sync
 
     if $compress; then
-        echo "\n${h1}compressing image file...${rst}"
-        pv "$media" | xz -z > "$media.xz"
-        rm -f "$media"
-
+        print_hdr "compressing image file"
+        xz -z8v "$media"
         echo "\n${cya}compressed image is now ready${rst}"
-        echo "\n${cya}copy image to media:${rst}"
+        echo "\n${cya}copy image to target media:${rst}"
         echo "  ${cya}sudo sh -c 'xzcat $media.xz > /dev/sdX && sync'${rst}"
     elif [ -b "$media" ]; then
         echo "\n${cya}media is now ready${rst}"
@@ -163,11 +163,10 @@ make_image_file() {
     rm -f "$filename"
     local size="$(echo "$filename" | sed -rn 's/.*mmc_([[:digit:]]+[m|g])\.img$/\1/p')"
     local bytes="$(echo "$size" | sed -e 's/g/ << 30/' -e 's/m/ << 20/')"
-    pv -s $(($bytes)) /dev/zero | dd bs=64K count=$(($bytes >> 16)) of="$filename"
+    dd bs=64K count=$(($bytes >> 16)) if=/dev/zero of="$filename" status=progress
 }
 
-# partition & create ext4 filesystem
-format_media() {
+parition_media() {
     local media="$1"
 
     # partition with gpt
@@ -178,6 +177,10 @@ format_media() {
 	part1: start=32768, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=rootfs
 	EOF
     sync
+}
+
+format_media() {
+    local media="$1"
 
     # create ext4 filesystem
     if [ -b "$media" ]; then
@@ -195,15 +198,12 @@ format_media() {
     fi
 }
 
-# mount filesystem
 mount_media() {
     local media="$1"
     local mountpoint="$2"
 
     if [ -d "$mountpoint" ]; then
-        if [ -d "$mountpoint/lost+found" ]; then
-            umount "$mountpoint" 2> /dev/null || true
-        fi
+        mountpoint -q "$mountpt" && umount "$mountpt"
     else
         mkdir -p "$mountpoint"
     fi
@@ -304,28 +304,34 @@ file_locale_cfg() {
 	EOF
 }
 
-script_phase2_setup_sh() {
-    local uid="${1-debian}"
-    local pass="${2-debian}"
-
+script_rc_local() {
     cat <<-EOF
 	#!/bin/sh
 
 	set -e
 
-	apt update
-	apt -y full-upgrade
-	apt -y install linux-image-arm64 linux-headers-arm64 openssh-server systemd-timesyncd
-	apt -y install pciutils sudo wget u-boot-tools xxd xz-utils zip unzip
+	this=\$(realpath \$0)
+	perm=\$(stat -c %a \$this)
 
-	useradd -m "$uid" -p \$(echo "$pass" | openssl passwd -6 -stdin) -s /bin/bash
-	(umask 377 && echo "$uid ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$uid)
+	if [ 774 -eq \$perm ]; then
+	    # expand fs
+	    resize2fs \$(findmnt / -o source -n)
+	    rm "\$this"
+	else
+	    # regen ssh keys
+	    rm -f /etc/ssh/ssh_host_*
+	    dpkg-reconfigure openssh-server
 
-	mv /tmp/phase2_setup/first_boot /root
-	mv /root/first_boot/first_boot_cfg.service /etc/systemd/system
-	systemctl enable first_boot_cfg.service
+	    # expand root parition
+	    rp=\$(findmnt / -o source -n)
+	    rpn=\$(echo "\$rp" | grep -o '[[:digit:]]*\$')
+	    rd="/dev/\$(/usr/bin/lsblk -no pkname \$rp)"
+	    echo ', +' | sfdisk -f -N \$rpn \$rd
 
-	exit
+	    # setup for expand fs
+	    chmod 774 "\$this"
+	    reboot
+	fi
 	EOF
 }
 
@@ -366,11 +372,27 @@ script_mkscr_sh() {
 	EOF
 }
 
+print_hdr() {
+    local msg=$1
+    echo "\n${h1}$msg...${rst}"
+}
 
-if [ 0 -ne $(id -u) ]; then
-    echo 'this script must be run as root'
-    exit 9
-fi
+# ensure inner mount points get cleaned up
+on_exit() {
+    if mountpoint -q "$mountpt"; then
+        print_hdr "cleaning up mount points"
+        mountpoint -q "$mountpt/var/cache" && umount "$mountpt/var/cache"
+        mountpoint -q "$mountpt/var/lib/apt/lists" && umount "$mountpt/var/lib/apt/lists"
+
+        read -p "$mountpt is still mounted, unmount? <Y/n> " yn
+        if [ "$yn" = "y" -o "$yn" = "Y" -o "$yn" = "yes" -o "$yn" = "Yes" ]; then
+            echo "unmounting $mountpt"
+            umount "$mountpt"
+        fi
+    fi
+}
+mountpt='rootfs'
+trap on_exit INT QUIT ABRT TERM
 
 rst='\033[m'
 bld='\033[1m'
@@ -382,6 +404,10 @@ mag='\033[35m'
 cya='\033[36m'
 h1="${blu}==>${rst} ${bld}"
 
+if [ 0 -ne $(id -u) ]; then
+    echo 'this script must be run as root'
+    exit 9
+fi
+
 main "$1"
-unset rst bld red grn yel blu mag cya h1
 
