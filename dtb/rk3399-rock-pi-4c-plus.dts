@@ -448,6 +448,12 @@
 	};
 };
 
+&i2c1 {
+	i2c-scl-rising-time-ns = <450>;
+	i2c-scl-falling-time-ns = <15>;
+	status = "okay";
+};
+
 &i2c3 {
 	i2c-scl-rising-time-ns = <450>;
 	i2c-scl-falling-time-ns = <15>;
@@ -485,6 +491,21 @@
 	bt656-supply = <&vcc_3v0_s0>;
 	gpio1830-supply = <&vcc_3v0_s0>;
 	sdmmc-supply = <&vcc_sdio_s0>;
+	status = "okay";
+};
+
+&pcie_phy {
+	status = "okay";
+};
+
+&pcie0 {
+	ep-gpios = <&gpio1 RK_PA1 GPIO_ACTIVE_HIGH>;
+	num-lanes = <4>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie_clkreqnb_cpm>;
+	vpcie0v9-supply = <&vcc_0v9_s3>;
+	vpcie1v8-supply = <&vcc_1v8_s3>;
+	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
 };
 
