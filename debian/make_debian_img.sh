@@ -33,11 +33,11 @@ main() {
     local cache="cache.$deb_dist"
     local lfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220913.tar.xz')
     local lfwsha='26fd00f2d8e96c4af6f44269a6b893eb857253044f75ad28ef6706a2250cd8e9'
-    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/rk3399-rock-pi-4c-plus.dtb')
+    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/rk3399-rock-pi-4c-plus.dtb')
 #    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
-    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/idbloader.img')
+    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/idbloader.img')
 #    local uboot_spl='../uboot/idbloader.img'
-    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/u-boot.itb')
+    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/u-boot.itb')
 #    local uboot_itb='../uboot/u-boot.itb'
 
     if [ "$lfwsha" != $(sha256sum "$lfw" | cut -c1-64) ]; then
@@ -78,7 +78,9 @@ main() {
     print_hdr "installing root filesystem from debian.org"
     mkdir "$mountpt/etc"
     echo 'link_in_boot = 1' > "$mountpt/etc/kernel-img.conf"
-    local pkgs="linux-image-arm64, linux-headers-arm64, openssh-server, systemd-timesyncd, $extra_pkgs"
+    local pkgs="linux-image-arm64, dhcpcd5, openssh-server, systemd-timesyncd"
+    pkgs="$pkgs, wireless-regdb, wpasupplicant"
+    pkgs="$pkgs, $extra_pkgs"
     debootstrap --arch arm64 --include "$pkgs" "$deb_dist" "$mountpt" 'https://deb.debian.org/debian/'
 
     umount "$mountpt/var/cache"
@@ -86,8 +88,16 @@ main() {
 
     print_hdr "configuring files"
     echo "$(file_apt_sources $deb_dist)\n" > "$mountpt/etc/apt/sources.list"
-    echo "$(file_net_iface)\n" > "$mountpt/etc/network/interfaces"
     echo "$(file_locale_cfg)\n" > "$mountpt/etc/default/locale"
+
+    rm -rf "$mountpt/etc/systemd/system/multi-user.target.wants/wpa_supplicant.service"
+    echo "$(file_wpa_supplicant_conf)\n" > "$mountpt/etc/wpa_supplicant/wpa_supplicant.conf"
+    cp "$mountpt/usr/share/dhcpcd/hooks/10-wpa_supplicant" "$mountpt/usr/lib/dhcpcd/dhcpcd-hooks"
+
+    # todo: why are these being created here?
+    rm -rf "$mountpt/etc/systemd/system/dbus-fi.w1.wpa_supplicant1.service"
+    rm -rf "$mountpt/etc/systemd/system/dbus-org.freedesktop.timesync1.service"
+    rm -rf "$mountpt/etc/systemd/system/sshd.service"
 
     # hostname
     echo $hostname > "$mountpt/etc/hostname"
@@ -106,12 +116,15 @@ main() {
     echo "$(script_mkscr_sh)\n" > "$mountpt/boot/mkscr.sh"
     chmod 754 "$mountpt/boot/mkscr.sh"
     install -m 644 "$dtb" "$mountpt/boot"
-    ln -s $(basename "$dtb") "$mountpt/boot/dtb"
+    ln -sf $(basename "$dtb") "$mountpt/boot/dtb"
 
     print_hdr "installing firmware"
     local lfwn=$(basename "$lfw")
     mkdir -p "$mountpt/lib/firmware"
-    tar -C "$mountpt/lib/firmware" --strip-components=1 -xavf "$lfw" "${lfwn%%.*}/rockchip" "${lfwn%%.*}/rtl_nic"
+    tar -C "$mountpt/lib/firmware" --strip-components=1 --wildcards -xavf "$lfw" "${lfwn%%.*}/rockchip" "${lfwn%%.*}/rtl_nic" "${lfwn%%.*}/brcm/brcmfmac43455-sdio.AW-CM256SM.txt" "${lfwn%%.*}/cypress/cyfmac43455-sdio.*"
+    ln -sf brcmfmac43455-sdio.AW-CM256SM.txt "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.txt"
+    ln -sf ../cypress/cyfmac43455-sdio.bin "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.bin"
+    ln -sf ../cypress/cyfmac43455-sdio.clm_blob "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob"
 
     print_hdr "creating user account"
     chroot "$mountpt" /usr/sbin/useradd -m $acct_uid -s /bin/bash
@@ -268,19 +281,10 @@ file_apt_sources() {
 	EOF
 }
 
-file_net_iface() {
+file_wpa_supplicant_conf() {
     cat <<-EOF
-	# interfaces(5) file used by ifup(8) and ifdown(8)
-	# Include files from /etc/network/interfaces.d:
-	source /etc/network/interfaces.d/*
-
-	# loopback network interface
-	auto lo
-	iface lo inet loopback
-
-	# eth0 network interface
-	auto eth0
-	iface eth0 inet dhcp
+	ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+	update_config=1
 	EOF
 }
 
@@ -388,11 +392,12 @@ on_exit() {
         if [ "$yn" = "y" -o "$yn" = "Y" -o "$yn" = "yes" -o "$yn" = "Yes" ]; then
             echo "unmounting $mountpt"
             umount "$mountpt"
+            sync
         fi
     fi
 }
 mountpt='rootfs'
-trap on_exit INT QUIT ABRT TERM
+trap on_exit EXIT INT QUIT ABRT TERM
 
 rst='\033[m'
 bld='\033[1m'
