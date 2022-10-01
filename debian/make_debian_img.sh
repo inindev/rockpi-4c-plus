@@ -78,7 +78,7 @@ main() {
     print_hdr "installing root filesystem from debian.org"
     mkdir "$mountpt/etc"
     echo 'link_in_boot = 1' > "$mountpt/etc/kernel-img.conf"
-    local pkgs="linux-image-arm64, dhcpcd5, openssh-server, systemd-timesyncd"
+    local pkgs="linux-image-arm64, dbus, dhcpcd5, openssh-server, systemd-timesyncd"
     pkgs="$pkgs, wireless-regdb, wpasupplicant"
     pkgs="$pkgs, $extra_pkgs"
     debootstrap --arch arm64 --include "$pkgs" "$deb_dist" "$mountpt" 'https://deb.debian.org/debian/'
