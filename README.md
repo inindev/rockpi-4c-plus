@@ -8,7 +8,7 @@ stock debian arm64 linux for the rockpi 4c+
 
 **1. download image:**
 ```
-wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease/bookworm-prerelease.img.xz
+wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/bookworm-prerelease.img.xz
 ```
 
 <br/>
