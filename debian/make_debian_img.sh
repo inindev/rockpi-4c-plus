@@ -31,8 +31,13 @@ main() {
 
     print_hdr "downloading files"
     local cache="cache.$deb_dist"
+    # linux firmware
     local lfw=$(download "$cache" 'https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-20220913.tar.xz')
     local lfwsha='26fd00f2d8e96c4af6f44269a6b893eb857253044f75ad28ef6706a2250cd8e9'
+    # bluetooth firmware
+    local bfw=$(download "$cache" 'https://github.com/murata-wireless/cyw-bt-patch/raw/master/BCM4345C0_003.001.025.0187.0366.1MW.hcd')
+    local bfwsha='c903509c43baf812283fbd10c65faab3b0735e09bd57c5a9e9aa97cf3f274d3b'
+    # device tree & uboot
     local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/rk3399-rock-pi-4c-plus.dtb')
 #    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
     local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/idbloader.img')
@@ -42,6 +47,11 @@ main() {
 
     if [ "$lfwsha" != $(sha256sum "$lfw" | cut -c1-64) ]; then
         echo "invalid hash for linux firmware: $lfw"
+        exit 5
+    fi
+
+    if [ "$bfwsha" != $(sha256sum "$bfw" | cut -c1-64) ]; then
+        echo "invalid hash for bluetooth firmware: $bfw"
         exit 5
     fi
 
@@ -119,12 +129,17 @@ main() {
     ln -sf $(basename "$dtb") "$mountpt/boot/dtb"
 
     print_hdr "installing firmware"
-    local lfwn=$(basename "$lfw")
     mkdir -p "$mountpt/lib/firmware"
+
+    local lfwn=$(basename "$lfw")
     tar -C "$mountpt/lib/firmware" --strip-components=1 --wildcards -xavf "$lfw" "${lfwn%%.*}/rockchip" "${lfwn%%.*}/rtl_nic" "${lfwn%%.*}/brcm/brcmfmac43455-sdio.AW-CM256SM.txt" "${lfwn%%.*}/cypress/cyfmac43455-sdio.*"
     ln -sf brcmfmac43455-sdio.AW-CM256SM.txt "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.txt"
     ln -sf ../cypress/cyfmac43455-sdio.bin "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.bin"
     ln -sf ../cypress/cyfmac43455-sdio.clm_blob "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob"
+
+    local bfwn=$(basename "$bfw")
+    cp "$bfw" "$mountpt/lib/firmware/brcm"
+    ln -sf "$bfwn" "$mountpt/lib/firmware/brcm/BCM4345C0.radxa,rockpi4c-plus.hcd"
 
     print_hdr "creating user account"
     chroot "$mountpt" /usr/sbin/useradd -m $acct_uid -s /bin/bash
