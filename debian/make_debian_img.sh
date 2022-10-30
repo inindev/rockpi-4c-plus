@@ -38,11 +38,11 @@ main() {
     local bfw=$(download "$cache" 'https://github.com/murata-wireless/cyw-bt-patch/raw/master/BCM4345C0_003.001.025.0187.0366.1MW.hcd')
     local bfwsha='c903509c43baf812283fbd10c65faab3b0735e09bd57c5a9e9aa97cf3f274d3b'
     # device tree & uboot
-    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/rk3399-rock-pi-4c-plus.dtb')
+    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.3/rk3399-rock-pi-4c-plus.dtb')
 #    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
-    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/idbloader.img')
+    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.3/idbloader.img')
 #    local uboot_spl='../uboot/idbloader.img'
-    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.2/u-boot.itb')
+    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.3/u-boot.itb')
 #    local uboot_itb='../uboot/u-boot.itb'
 
     if [ "$lfwsha" != $(sha256sum "$lfw" | cut -c1-64) ]; then
