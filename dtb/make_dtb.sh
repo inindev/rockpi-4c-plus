@@ -6,7 +6,7 @@ set -e
 # kernel.org linux version
 
 main() {
-    local lv='5.19.11'
+    local lv='6.0.6'
 
     if [ 'clean' = "$1" ]; then
         rm -f *.dtb *-top.dts
@@ -16,7 +16,7 @@ main() {
     fi
 
     if [ ! -f "linux-$lv.tar.xz" ]; then
-        wget "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$lv.tar.xz"
+        wget "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$lv.tar.xz"
     fi
 
     local lrcp="linux-$lv/arch/arm64/boot/dts/rockchip"
