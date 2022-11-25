@@ -404,7 +404,7 @@ on_exit() {
         mountpoint -q "$mountpt/var/lib/apt/lists" && umount "$mountpt/var/lib/apt/lists"
 
         read -p "$mountpt is still mounted, unmount? <Y/n> " yn
-        if [ "$yn" = "y" -o "$yn" = "Y" -o "$yn" = "yes" -o "$yn" = "Yes" ]; then
+        if [ "$yn" = "" -o "$yn" = "y" -o "$yn" = "Y" -o "$yn" = "yes" -o "$yn" = "Yes" ]; then
             echo "unmounting $mountpt"
             umount "$mountpt"
             sync
