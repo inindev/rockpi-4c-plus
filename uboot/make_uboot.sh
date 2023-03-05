@@ -45,7 +45,7 @@ make -C u-boot -j$(nproc) BL31=$atf_file
 cp u-boot/idbloader.img .
 cp u-boot/u-boot.itb .
 
-# outputs: idbloader-spi.img & u-boot.itb
+# outputs: idbloader-spi.img & u-boot-spi.itb
 make -C u-boot distclean
 make -C u-boot rock-pi-4c-plus-rk3399_spiflash_defconfig
 make -C u-boot -j$(nproc) BL31=$atf_file
