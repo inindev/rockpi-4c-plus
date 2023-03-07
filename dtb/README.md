@@ -2,7 +2,7 @@
 
 <br/>
 
-**build u-boot images for the rockpi 4c+**
+**build device tree images for the rockpi 4c+**
 ```
 sh make_dtb.sh
 ```
