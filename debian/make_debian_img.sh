@@ -2,6 +2,13 @@
 
 set -e
 
+# script exit codes:
+#   1: missing utility
+#   2: download failure
+#   3: image mount failure
+#   4: missing file
+#   5: invalid file hash
+#   9: superuser required
 
 main() {
     # file media is sized with the number between 'mmc_' and '.img'
@@ -11,18 +18,8 @@ main() {
     local hostname='deb-arm64'
     local acct_uid='debian'
     local acct_pass='debian'
-    local disable_ipv6='true'
+    local disable_ipv6=true
     local extra_pkgs='pciutils, sudo, wget, u-boot-tools, xxd, xz-utils, zip, unzip'
-
-    #
-    # script exit codes:
-    #   1: missing utility
-    #   2: download failure
-    #   3: image mount failure
-    #   4: missing file
-    #   5: invalid file hash
-    #   9: superuser required
-    #
 
     # no compression if disabled or block media
     local compress=$([ "nocomp" = "$1" -o -b "$media" ] && echo false || echo true)
@@ -114,11 +111,10 @@ main() {
     sed -i "s/127.0.0.1\tlocalhost/127.0.0.1\tlocalhost\n127.0.1.1\t$hostname/" "$mountpt/etc/hosts"
 
     # enable ll alias
-    sed -i "s/#alias ll='ls -l'/alias ll='ls -l'/" "$mountpt/etc/skel/.bashrc"
-    sed -i "s/# export LS_OPTIONS='--color=auto'/export LS_OPTIONS='--color=auto'/" "$mountpt/root/.bashrc"
-    sed -i "s/# eval \"\`dircolors\`\"/eval \"\`dircolors\`\"/" "$mountpt/root/.bashrc"
-    sed -i "s/# alias ls='ls \$LS_OPTIONS'/alias ls='ls \$LS_OPTIONS'/" "$mountpt/root/.bashrc"
-    sed -i "s/# alias ll='ls \$LS_OPTIONS -l'/alias ll='ls \$LS_OPTIONS -l'/" "$mountpt/root/.bashrc"
+    sed -i '/alias.ll=/s/^#*\s*//' "$mountpt/etc/skel/.bashrc"
+    sed -i '/export.LS_OPTIONS/s/^#*\s*//' "$mountpt/root/.bashrc"
+    sed -i '/eval.*dircolors/s/^#*\s*//' "$mountpt/root/.bashrc"
+    sed -i '/alias.l.=/s/^#*\s*//' "$mountpt/root/.bashrc"
 
     # setup /boot
     echo "$(script_boot_txt $disable_ipv6)\n" > "$mountpt/boot/boot.txt"
@@ -355,7 +351,7 @@ script_rc_local() {
 }
 
 script_boot_txt() {
-    local no_ipv6="$([ "$1" = "true" ] && echo ' ipv6.disable=1')"
+    local no_ipv6="$($1 && echo ' ipv6.disable=1')"
 
     cat <<-EOF
 	# after modifying, run ./mkscr.sh
