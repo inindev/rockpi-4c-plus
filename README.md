@@ -6,22 +6,22 @@ stock debian arm64 linux for the rockpi 4c+
 
 <br/>
 
-**1. download image:**
+**1. download image**
 ```
 wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.3/bookworm-prerelease.img.xz
 ```
 
 <br/>
 
-**2. determine the location of the target micro sd card:**
+**2. determine the location of the target micro sd card**
 
- * before plugging-in device:
+ * before plugging-in device
 ```
 ls -l /dev/sd*
 ls: cannot access '/dev/sd*': No such file or directory
 ```
 
- * after plugging-in device:
+ * after plugging-in device
 ```
 ls -l /dev/sd*
 brw-rw---- 1 root disk 8, 0 Sep  8 20:58 /dev/sda
@@ -30,7 +30,7 @@ brw-rw---- 1 root disk 8, 0 Sep  8 20:58 /dev/sda
 
 <br/>
 
-**3. in the case above, substitute 'a' for 'X' in the command below (for /dev/sda):**
+**3. in the case above, substitute 'a' for 'X' in the command below (for /dev/sda)**
 ```
 sudo sh -c 'xzcat bookworm-prerelease.img.xz > /dev/sdX && sync'
 ```
@@ -39,15 +39,15 @@ sudo sh -c 'xzcat bookworm-prerelease.img.xz > /dev/sdX && sync'
 
 <br/>
 
-**4. login:**
+**4. login account**
 ```
-user: debian@192.168.1.xxx
+user: debian
 pass: debian
 ```
 
 <br/>
 
-**5. take updates:**
+**5. take updates**
 ```
 sudo apt update
 sudo apt upgrade
@@ -55,7 +55,7 @@ sudo apt upgrade
 
 <br/>
 
-**6. create account & login as new user:**
+**6. create account & login as new user**
 ```
 sudo adduser <youruserid>
 echo '<youruserid> ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/<youruserid>
@@ -64,7 +64,7 @@ sudo chmod 440 /etc/sudoers.d/<youruserid>
 
 <br/>
 
-**7. lockout and/or delete debian account:**
+**7. lockout and/or delete debian account**
 ```
 sudo passwd -l debian
 sudo chsh -s /usr/sbin/nologin debian
@@ -77,7 +77,7 @@ sudo rm /etc/sudoers.d/debian
 
 <br/>
 
-**8. change hostname (optional):**
+**8. change hostname (optional)**
 ```
 sudo nano /etc/hostname
 sudo nano /etc/hosts
@@ -97,7 +97,7 @@ stock debian bookworm arm64.
 
 <br/>
 
-**1. clone the repo:**
+**1. clone the repo**
 ```
 git clone https://github.com/inindev/rockpi-4c-plus.git
 cd rockpi-4c-plus
