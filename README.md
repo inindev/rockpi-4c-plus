@@ -1,5 +1,13 @@
 # rockpi-4c-plus
-stock debian arm64 linux for the rockpi 4c+
+#### *Stock Debian ARM64 Linux for the Radxa ROCK (Pi) 4C+*
+
+This stock Debian ARM64 Linux image is built directly from official packages using the official Debian [Debootstrap](https://wiki.debian.org/Debootstrap) utility, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L91
+
+Being an official unmodified Debian build, patches are directory available from the Debian repos using the stock **apt** package manager, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L284
+
+If you want to run true up-stream Debian Linux on your ARM64 device, this is the way to do it.
+
+<br/>
 
 ---
 ### debian bookworm setup
