@@ -6,7 +6,7 @@ set -e
 #   5: invalid file hash
 
 main() {
-    local utag='v2023.01'
+    local utag='v2023.04'
     local atf_url='https://github.com/atf-builds/atf/releases/download/v2.8/rk3399_bl31.elf'
     local atf_sha='adc7cc6088d95537f8509056d21eb45b11d15d704804b0f4a34b52b21bddcb1e'
     local atf_file=$(basename $atf_url)
