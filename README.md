@@ -128,3 +128,14 @@ mmc_2g.img.xz
 ```
 
 <br/>
+
+---
+### _note: bypassing spi flash boot_
+
+If the SPI flash contains a bootable image, the flash will need to be disabled to boot from MMC. To disable the flash, short [SPI1_CLK pin 23](https://wiki.radxa.com/Rockpi4/hardware/gpio) to ground as outlined on the [radxa wiki](https://wiki.radxa.com/Rockpi4/dev/spi-install#Case_2:_Update_SPI_flash_with_bootloader_inside). Once the MMC has been bootstrapped, the jumper can carefully be removed to reenable the SPI flash so it can be accessed by the booted image.
+
+<br/>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://wiki.radxa.com/mw/images/c/c4/Spi_clk_gnd.jpg" alt="spi flash bypass" width="300"/>
+
+<br/>
