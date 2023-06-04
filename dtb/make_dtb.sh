@@ -2,8 +2,13 @@
 
 set -e
 
+# script exit codes:
+#   1: missing utility
+#   5: invalid file hash
+
 main() {
-    local linux='https://git.kernel.org/torvalds/t/linux-6.3-rc5.tar.gz'
+    local linux='https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.3.5.tar.xz'
+    local lxsha='f5cd478c3d8b908ab606afd1e95a4f8f77e7186b4a82829251d6e6aaafff825e'
 
     local lf=$(basename $linux)
     local lv=$(echo $lf | sed -nE 's/linux-(.*)\.tar\..z/\1/p')
@@ -19,13 +24,18 @@ main() {
 
     [ -f $lf ] || wget $linux
 
+    if [ _$lxsha != _$(sha256sum $lf | cut -c1-64) ]; then
+        echo "invalid hash for linux source file: $lf"
+        exit 5
+    fi
+
     local rkpath=linux-$lv/arch/arm64/boot/dts/rockchip
-    if ! [ -d linux-$lv ]; then
+    if [ ! -d linux-$lv ]; then
         tar xavf $lf linux-$lv/include/dt-bindings linux-$lv/include/uapi $rkpath
         ln -sf '../../../../../../rk3399-rock-pi-4c-plus.dts' $rkpath
     fi
 
-    if [ '_links' = "_$1" ]; then
+    if [ _links = _$1 ]; then
         ln -sfv $rkpath/rk3399-t-opp.dtsi
         ln -sfv $rkpath/rk3399.dtsi
         echo '\nlinks created\n'
