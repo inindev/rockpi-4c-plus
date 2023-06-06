@@ -19,9 +19,9 @@ main() {
     local acct_uid='debian'
     local acct_pass='debian'
     local disable_ipv6=true
-    local extra_pkgs='curl, sudo, unzip, wget, xz-utils, zip'
+    local extra_pkgs='curl, pciutils, sudo, u-boot-tools, unzip, wget, xxd, xz-utils, zip, zstd'
 
-    is_param 'clean' $@ && rm -rf cache.* && rm mmc_2g.img* && exit 0
+    is_param 'clean' $@ && rm -rf cache.* && rm "$media"* && exit 0
 
     if [ -f "$media" ]; then
         read -p "file $media exists, overwrite? <y/N> " yn
@@ -53,11 +53,11 @@ main() {
     local bfw=$(download "$cache" 'https://github.com/murata-wireless/cyw-bt-patch/raw/master/BCM4345C0_003.001.025.0187.0366.1MW.hcd')
     local bfwsha='c903509c43baf812283fbd10c65faab3b0735e09bd57c5a9e9aa97cf3f274d3b'
     # device tree & uboot
-    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-rc4/rk3399-rock-pi-4c-plus.dtb')
+    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rk3399-rock-pi-4c-plus.dtb')
 #    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
-    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-rc4/idbloader.img')
+    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/idbloader.img')
 #    local uboot_spl='../uboot/idbloader.img'
-    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12-rc4/u-boot.itb')
+    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12/u-boot.itb')
 #    local uboot_itb='../uboot/u-boot.itb'
 
     if [ "$lfwsha" != $(sha256sum "$lfw" | cut -c1-64) ]; then
@@ -71,7 +71,7 @@ main() {
     fi
 
     if [ ! -f "$dtb" ]; then
-        echo "unable to fetch device tree binary: $dtb"
+        echo "device tree binary is missing: $dtb"
         exit 4
     fi
 
@@ -108,7 +108,7 @@ main() {
     print_hdr "installing root filesystem from debian.org"
     mkdir "$mountpt/etc"
     echo 'link_in_boot = 1' > "$mountpt/etc/kernel-img.conf"
-    local pkgs="linux-image-arm64, dbus, dhcpcd5, libpam-systemd, openssh-server, pciutils, systemd-timesyncd, u-boot-tools, xxd, zstd"
+    local pkgs="linux-image-arm64, dbus, dhcpcd5, libpam-systemd, openssh-server, systemd-timesyncd"
     pkgs="$pkgs, wireless-regdb, wpasupplicant"
     pkgs="$pkgs, $extra_pkgs"
     debootstrap --arch arm64 --include "$pkgs" --exclude "isc-dhcp-client" "$deb_dist" "$mountpt" 'https://deb.debian.org/debian/'
@@ -123,7 +123,9 @@ main() {
     # disable sshd until after keys are regenerated on first boot
     rm -f "$mountpt/etc/systemd/system/sshd.service"
     rm -f "$mountpt/etc/systemd/system/multi-user.target.wants/ssh.service"
+    rm -f "$mountpt/etc/ssh/ssh_host_"*
 
+    rm -f "$mountpt/etc/machine.id"
     rm -f "$mountpt/etc/systemd/system/multi-user.target.wants/wpa_supplicant.service"
     echo "$(file_wpa_supplicant_conf)\n" > "$mountpt/etc/wpa_supplicant/wpa_supplicant.conf"
     cp "$mountpt/usr/share/dhcpcd/hooks/10-wpa_supplicant" "$mountpt/usr/lib/dhcpcd/dhcpcd-hooks"
@@ -154,7 +156,9 @@ main() {
     ln -sf $(basename "$dtb") "$mountpt/boot/dtb"
 
     print_hdr "installing firmware"
+    mkdir -p "$mountpt/lib/firmware"
     local lfwn=$(basename "$lfw")
+
     tar -C "$mountpt/lib/firmware" --strip-components=1 --wildcards -xavf "$lfw" "${lfwn%%.*}/rockchip" "${lfwn%%.*}/rtl_nic" "${lfwn%%.*}/brcm/brcmfmac43455-sdio.AW-CM256SM.txt" "${lfwn%%.*}/cypress/cyfmac43455-sdio.*"
     ln -sf brcmfmac43455-sdio.AW-CM256SM.txt "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.txt"
     ln -sf ../cypress/cyfmac43455-sdio.bin "$mountpt/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.bin"
@@ -174,13 +178,8 @@ main() {
     chroot "$mountpt" /usr/bin/passwd -e $acct_uid
     (umask 377 && echo "$acct_uid ALL=(ALL) NOPASSWD: ALL" > "$mountpt/etc/sudoers.d/$acct_uid")
 
-    # when compressing, reduce entropy in free space to enhance compression
-    if $compress; then
-        print_hdr "removing entropy before compression"
-        cat /dev/zero > "$mountpt/tmp/zero.bin" 2> /dev/null || true
-        sync
-        rm -f "$mountpt/tmp/zero.bin"
-    fi
+    # reduce entropy on non-block media
+    [ -b "$media" ] || fstrim -v "$mountpt"
 
     umount "$mountpt"
     rm -rf "$mountpt"
@@ -209,8 +208,7 @@ make_image_file() {
     local filename="$1"
     rm -f "$filename"*
     local size="$(echo "$filename" | sed -rn 's/.*mmc_([[:digit:]]+[m|g])\.img$/\1/p')"
-    local bytes="$(echo "$size" | sed -e 's/g/ << 30/' -e 's/m/ << 20/')"
-    dd bs=64K count=$(($bytes >> 16)) if=/dev/zero of="$filename" status=progress
+    truncate -s $size "$filename"
 }
 
 parition_media() {
@@ -410,21 +408,18 @@ script_rc_local() {
 	    # expand fs
 	    resize2fs \$(findmnt / -o source -n)
 	    rm "\$this"
+	    systemctl stop rc-local.service
 	else
 	    # regen ssh keys
-	    rm -f /etc/ssh/ssh_host_*
 	    dpkg-reconfigure openssh-server
 	    systemctl enable ssh.service
 
-	    # expand root parition
+	    # expand root parition & change uuid
 	    rp=\$(findmnt / -o source -n)
 	    rpn=\$(echo "\$rp" | grep -o '[[:digit:]]*\$')
-	    rd="/dev/\$(lsblk -no pkname \$rp)"
-	    echo ', +' | sfdisk -f -N \$rpn \$rd
-
-	    # change uuid on partition
+	    rd=/dev/\$(lsblk -no pkname \$rp)
 	    uuid=\$(cat /proc/sys/kernel/random/uuid)
-	    sfdisk --part-uuid \$rd \$rpn \$uuid
+	    echo "size=+, uuid=\$uuid" | sfdisk -f -N \$rpn \$rd
 
 	    # setup for expand fs
 	    chmod 774 "\$this"
@@ -515,7 +510,6 @@ blu='\033[34m'
 mag='\033[35m'
 cya='\033[36m'
 h1="${blu}==>${rst} ${bld}"
-
 
 if [ 0 -ne $(id -u) ]; then
     echo 'this script must be run as root'
