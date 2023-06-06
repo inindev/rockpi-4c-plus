@@ -3,6 +3,7 @@
 set -e
 
 # script exit codes:
+#   1: missing utility
 #   5: invalid file hash
 
 main() {
@@ -13,6 +14,7 @@ main() {
 
     if [ '_clean' = "_$1" ]; then
         #rm -f u-boot/rk3399_bl31.elf
+        rm -f u-boot/simple-bin.fit.*
         make -C u-boot distclean
         git -C u-boot clean -f
         git -C u-boot checkout master
@@ -39,12 +41,10 @@ main() {
         git -C u-boot checkout $utag
     fi
 
-    if [ ! -f u-boot/$atf_file ]; then
-        wget -cP u-boot $atf_url
-        if [ "$atf_sha" != $(sha256sum u-boot/$atf_file | cut -c1-64) ]; then
-            echo "invalid hash for atf binary: u-boot/$atf_file"
-            exit 5
-        fi
+    [ -f u-boot/$atf_file ] || wget -cP u-boot $atf_url
+    if [ "$atf_sha" != $(sha256sum u-boot/$atf_file | cut -c1-64) ]; then
+        echo "invalid hash for atf binary: u-boot/$atf_file"
+        exit 5
     fi
 
     rm -f idbloader.img u-boot.itb
@@ -76,10 +76,8 @@ main() {
     echo "  ${cya}sudo dd bs=4K seek=2048 if=u-boot.itb of=/dev/sdX conv=notrunc,fsync${rst}"
     echo
     echo "${blu}optionally, flash to spi (apt install mtd-utils):${rst}"
-    echo "  ${blu}flash_erase /dev/mtd0 0 0${rst}"
-    echo "  ${blu}nandwrite /dev/mtd0 idbloader-spi.img${rst}"
-    echo "  ${blu}flash_erase /dev/mtd2 0 0${rst}"
-    echo "  ${blu}nandwrite /dev/mtd2 u-boot-spi.itb${rst}"
+    echo "  ${blu}sudo flashcp -v idbloader-spi.img /dev/mtd0${rst}"
+    echo "  ${blu}sudo flashcp -v u-boot-spi.itb /dev/mtd2${rst}"
     echo
 }
 
