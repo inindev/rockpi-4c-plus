@@ -47,28 +47,21 @@ main() {
         exit 5
     fi
 
-    rm -f idbloader.img u-boot.itb
-    rm -f idbloader-spi.img u-boot-spi.itb
+    # outputs: idbloader.img, idbloader-spi.img, and u-boot.itb
+    rm -f idbloader*.img u-boot.itb
     if [ '_inc' != "_$1" ]; then
         make -C u-boot distclean
+        make -C u-boot rock-pi-4c-plus-rk3399_defconfig
     fi
-
-    # outputs: idbloader.img & u-boot.itb
-    make -C u-boot rock-pi-4c-plus-rk3399_defconfig
     make -C u-boot -j$(nproc) BL31=$atf_file
-    cp u-boot/idbloader.img .
-    cp u-boot/u-boot.itb .
-
-    # outputs: idbloader-spi.img & u-boot-spi.itb
-    make -C u-boot rock-pi-4c-plus-rk3399_spiflash_defconfig
-    make -C u-boot -j$(nproc) BL31=$atf_file
-    cp u-boot/idbloader-spi.img .
-    cp u-boot/u-boot.itb u-boot-spi.itb
+    ln -sfv u-boot/idbloader.img
+    ln -sfv u-boot/idbloader-spi.img
+    ln -sfv u-boot/u-boot.itb
 
     # make spi image file
     #dd bs=64K count=64 if=/dev/zero | tr '\000' '\377' > rockpi-4cplus-uboot-spi.img
     #dd bs=4K seek=8 if=u-boot/idbloader-spi.img of=rockpi-4cplus-uboot-spi.img conv=notrunc
-    #dd bs=4K seek=512 if=u-boot/u-boot-spi.itb of=rockpi-4cplus-uboot-spi.img conv=notrunc
+    #dd bs=4K seek=512 if=u-boot/u-boot.itb of=rockpi-4cplus-uboot-spi.img conv=notrunc,fsync
 
     echo "\n${cya}idbloader and u-boot binaries are now ready${rst}"
     echo "\n${cya}copy images to media:${rst}"
@@ -77,7 +70,7 @@ main() {
     echo
     echo "${blu}optionally, flash to spi (apt install mtd-utils):${rst}"
     echo "  ${blu}sudo flashcp -v idbloader-spi.img /dev/mtd0${rst}"
-    echo "  ${blu}sudo flashcp -v u-boot-spi.itb /dev/mtd2${rst}"
+    echo "  ${blu}sudo flashcp -v u-boot.itb /dev/mtd2${rst}"
     echo
 }
 

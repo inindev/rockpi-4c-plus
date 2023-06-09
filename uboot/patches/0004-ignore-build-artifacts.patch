@@ -1,14 +1,15 @@
-From e20a463be2701fe3a19f3c0ce7ef916552120696 Mon Sep 17 00:00:00 2001
+From e4776c7bdc50ff80930c7c39ba3e2783f52ac079 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Wed, 5 Apr 2023 08:48:52 -0400
 Subject: [PATCH 4/4] ignore build artifacts
 
+Signed-off-by: John Clark <inindev@gmail.com>
 ---
  .gitignore | 4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/.gitignore b/.gitignore
-index 3a4d056edf..0b2b18f1cb 100644
+index 3a4d056edf..23ec59275b 100644
 --- a/.gitignore
 +++ b/.gitignore
 @@ -35,7 +35,7 @@
@@ -24,7 +25,7 @@ index 3a4d056edf..0b2b18f1cb 100644
  /MLO*
  /SPL*
  /System.map
-+/simple-bin.*
++/simple-bin*
  /u-boot*
  /boards.cfg
  /*.log

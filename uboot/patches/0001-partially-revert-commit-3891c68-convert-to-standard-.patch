@@ -1,12 +1,13 @@
-From 1ce2021fa3dcf8625dea295b72b6af5eeb6180a2 Mon Sep 17 00:00:00 2001
+From 69dfe52003382aa99919d52faf5e28bbc43236ed Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Sun, 4 Jun 2023 10:32:37 -0400
 Subject: [PATCH 1/4] partially revert commit 3891c68: convert to standard boot
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
- include/configs/rk3399_common.h | 3 +++
- 1 file changed, 3 insertions(+)
+ include/configs/rk3399_common.h   | 3 +++
+ include/configs/rockchip-common.h | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/include/configs/rk3399_common.h b/include/configs/rk3399_common.h
 index 96ba19c659..366459d544 100644
@@ -27,6 +28,19 @@ index 96ba19c659..366459d544 100644
  	"boot_targets=" BOOT_TARGETS "\0"
  
  #endif
+diff --git a/include/configs/rockchip-common.h b/include/configs/rockchip-common.h
+index 18544d75ac..b78be5c237 100644
+--- a/include/configs/rockchip-common.h
++++ b/include/configs/rockchip-common.h
+@@ -67,7 +67,7 @@
+ 	BOOT_TARGET_PXE(func) \
+ 	BOOT_TARGET_DHCP(func) \
+ 	BOOT_TARGET_SF(func)
+-#define BOOT_TARGETS	"mmc1 mmc0 nvme scsi usb pxe dhcp spi"
++#define BOOT_TARGETS	"mmc1 mmc0 nvme0 usb0 pxe dhcp"
+ #else
+ #define BOOT_TARGET_DEVICES(func) \
+ 	BOOT_TARGET_MMC(func) \
 -- 
 2.39.2
 
