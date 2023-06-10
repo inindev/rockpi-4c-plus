@@ -34,6 +34,14 @@ main() {
     if ! git -C u-boot branch | grep -q $utag; then
         git -C u-boot checkout -b $utag $utag
 
+        # pci: pcie_dw_rockchip: release resources on failing probe
+        # https://github.com/u-boot/u-boot/commit/e04b67a7f4c1c326bf8c9376c0c7ba5ed9e5075d
+        git -C u-boot cherry-pick e04b67a7f4c1c326bf8c9376c0c7ba5ed9e5075d
+
+        # nvme: Enable PCI bus mastering
+        # https://github.com/u-boot/u-boot/commit/38534712cd4c4d8acdf760ee87ba219f82d738c9
+        git -C u-boot cherry-pick 38534712cd4c4d8acdf760ee87ba219f82d738c9
+
         for patch in patches/*.patch; do
             git -C u-boot am "../$patch"
         done
