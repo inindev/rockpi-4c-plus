@@ -1,9 +1,9 @@
 # rockpi-4c-plus
 #### *Stock Debian ARM64 Linux for the Radxa ROCK (Pi) 4C+*
 
-This stock Debian ARM64 Linux image is built directly from official packages using the official Debian [Debootstrap](https://wiki.debian.org/Debootstrap) utility, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L91
+This stock Debian ARM64 Linux image is built directly from official packages using the official Debian [Debootstrap](https://wiki.debian.org/Debootstrap) utility, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L114
 
-Being an official unmodified Debian build, patches are directory available from the Debian repos using the stock **apt** package manager, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L284
+Being an official unmodified Debian build, patches are directory available from the Debian repos using the stock **apt** package manager, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L360
 
 If you want to run true up-stream Debian Linux on your ARM64 device, this is the way to do it.
 
@@ -16,7 +16,7 @@ If you want to run true up-stream Debian Linux on your ARM64 device, this is the
 
 **1. download image**
 ```
-wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12-prerelease.3/bookworm-prerelease.img.xz
+wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rockpi-4c-plus_bookworm.img.xz
 ```
 
 <br/>
@@ -40,7 +40,7 @@ brw-rw---- 1 root disk 8, 0 Sep  8 20:58 /dev/sda
 
 **3. in the case above, substitute 'a' for 'X' in the command below (for /dev/sda)**
 ```
-sudo sh -c 'xzcat bookworm-prerelease.img.xz > /dev/sdX && sync'
+sudo sh -c 'xzcat rockpi-4c-plus_bookworm.img.xz > /dev/sdX && sync'
 ```
 
 #### when the micro sd has finished imaging, eject and use it to boot the rockpi 4c+ to finish setup
@@ -132,7 +132,7 @@ mmc_2g.img.xz
 ---
 ### _note: bypassing spi flash boot_
 
-If the SPI flash contains a bootable image, the flash will need to be disabled to boot from MMC. To disable the flash, short [SPI1_CLK pin 23](https://wiki.radxa.com/Rockpi4/hardware/gpio) to ground as outlined on the [radxa wiki](https://wiki.radxa.com/Rockpi4/dev/spi-install#Case_2:_Update_SPI_flash_with_bootloader_inside). Once the MMC has been bootstrapped, the jumper can carefully be removed to reenable the SPI flash so it can be accessed by the booted image.
+If the SPI flash contains a u-boot image, the flash will need to be disabled to boot from MMC. To disable the flash, short [SPI1_CLK pin 23](https://wiki.radxa.com/Rockpi4/hardware/gpio) to ground as outlined on the [radxa wiki](https://wiki.radxa.com/Rockpi4/dev/spi-install#Case_2:_Update_SPI_flash_with_bootloader_inside). Once the MMC has been bootstrapped, the jumper can carefully be removed to reenable the SPI flash so it can be accessed by the booted image.
 
 <br/>
 
