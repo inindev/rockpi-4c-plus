@@ -16,7 +16,7 @@ If you want to run true up-stream Debian Linux on your ARM64 device, this is the
 
 **1. download image**
 ```
-wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12/rockpi-4c-plus_bookworm.img.xz
+wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/rockpi-4c-plus_bookworm.img.xz
 ```
 
 <br/>
