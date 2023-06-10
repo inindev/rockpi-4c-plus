@@ -2,69 +2,108 @@
 
 set -e
 
-tag='v2022.07'
-atf_url='https://github.com/atf-builds/atf/releases/download/v2.6/rk3399_bl31.elf'
-atf_file=$(basename $atf_url)
+# script exit codes:
+#   1: missing utility
+#   5: invalid file hash
 
+main() {
+    local utag='v2023.04'
+    local atf_url='https://github.com/atf-builds/atf/releases/download/v2.8/rk3399_bl31.elf'
+    local atf_sha='adc7cc6088d95537f8509056d21eb45b11d15d704804b0f4a34b52b21bddcb1e'
+    local atf_file=$(basename $atf_url)
 
-if [ 'clean' = "$1" ]; then
-    rm -f idbloader*.img u-boot*.itb
-#    rm -f u-boot/rk3399_bl31.elf
-    make -C u-boot distclean
-    git -C u-boot clean -f
-    git -C u-boot checkout master
-    git -C u-boot branch -D uboot-$tag
-    git -C u-boot pull --ff-only
-    exit 0
-fi
+    if [ '_clean' = "_$1" ]; then
+        #rm -f u-boot/rk3399_bl31.elf
+        rm -f u-boot/simple-bin.fit.*
+        make -C u-boot distclean
+        git -C u-boot clean -f
+        git -C u-boot checkout master
+        git -C u-boot branch -D $utag 2>/dev/null || true
+        git -C u-boot pull --ff-only
+        rm -f *.img *.itb
+        exit 0
+    fi
 
-if [ ! -d u-boot ]; then
-    git clone https://github.com/u-boot/u-boot.git
-    git -C u-boot fetch --tags
-fi
+    check_installed 'bison' 'flex' 'libssl-dev' 'make' 'python3-dev' 'python3-pyelftools' 'python3-setuptools' 'swig'
 
-if ! git -C u-boot branch | grep -q uboot-$tag; then
-    git -C u-boot checkout -b uboot-$tag $tag
-        cp -v files/rock-pi-4c-plus-rk3399_defconfig u-boot/configs
-        cp -v files/rock-pi-4c-plus-rk3399_spiflash_defconfig u-boot/configs
-        cp -v files/rk3399-t-opp.dtsi u-boot/arch/arm/dts
-        cp -v files/rk3399-rock-pi-4c-plus.dts u-boot/arch/arm/dts
-        cp -v files/rk3399-rock-pi-4c-plus-u-boot.dtsi u-boot/arch/arm/dts
-elif [ uboot-$tag != "$(git -C u-boot branch | sed -n -e 's/^\* \(.*\)/\1/p')" ]; then
-    git -C u-boot checkout uboot-$tag
-fi
+    if [ ! -d u-boot ]; then
+        git clone https://github.com/u-boot/u-boot.git
+        git -C u-boot fetch --tags
+    fi
 
-if [ ! -f u-boot/$atf_file ]; then
-    wget -cP u-boot $atf_url
-fi
+    if ! git -C u-boot branch | grep -q $utag; then
+        git -C u-boot checkout -b $utag $utag
 
-# outputs: idbloader.img & u-boot.itb
-make -C u-boot distclean
-make -C u-boot rock-pi-4c-plus-rk3399_defconfig
-make -C u-boot -j$(nproc) BL31=$atf_file
-cp u-boot/idbloader.img .
-cp u-boot/u-boot.itb .
+        # pci: pcie_dw_rockchip: release resources on failing probe
+        # https://github.com/u-boot/u-boot/commit/e04b67a7f4c1c326bf8c9376c0c7ba5ed9e5075d
+        git -C u-boot cherry-pick e04b67a7f4c1c326bf8c9376c0c7ba5ed9e5075d
 
-# outputs: idbloader-spi.img & u-boot-spi.itb
-make -C u-boot distclean
-make -C u-boot rock-pi-4c-plus-rk3399_spiflash_defconfig
-make -C u-boot -j$(nproc) BL31=$atf_file
-u-boot/tools/mkimage -n rk3399 -T rkspi -d u-boot/tpl/u-boot-tpl.bin:u-boot/spl/u-boot-spl.bin idbloader-spi.img
-cp u-boot/u-boot.itb u-boot-spi.itb
+        # nvme: Enable PCI bus mastering
+        # https://github.com/u-boot/u-boot/commit/38534712cd4c4d8acdf760ee87ba219f82d738c9
+        git -C u-boot cherry-pick 38534712cd4c4d8acdf760ee87ba219f82d738c9
 
-# make spi image file
-#dd bs=64K count=64 if=/dev/zero | tr '\000' '\377' > rockpi-4cplus-uboot-spi.img
-#dd bs=4K seek=8 if=u-boot/idbloader-spi.img of=rockpi-4cplus-uboot-spi.img conv=notrunc
-#dd bs=4K seek=512 if=u-boot/u-boot-spi.itb of=rockpi-4cplus-uboot-spi.img conv=notrunc
+        for patch in patches/*.patch; do
+            git -C u-boot am "../$patch"
+        done
+    elif [ "_$utag" != "_$(git -C u-boot branch --show-current)" ]; then
+        git -C u-boot checkout $utag
+    fi
 
-echo '\nidb loader and u-boot binaries are now ready'
-echo '\ncopy images to media:'
-echo '  dd bs=4K seek=8 if=idbloader.img of=/dev/sdX conv=notrunc'
-echo '  dd bs=4K seek=2048 if=u-boot.itb of=/dev/sdX conv=notrunc,fsync'
-echo
-echo 'flash to spi (optional):'
-echo '  flash_erase /dev/mtd0 0 0'
-echo '  nandwrite /dev/mtd0 idbloader-spi.img'
-echo '  flash_erase /dev/mtd2 0 0'
-echo '  nandwrite /dev/mtd2 u-boot-spi.itb'
-echo
+    [ -f u-boot/$atf_file ] || wget -cP u-boot $atf_url
+    if [ "$atf_sha" != $(sha256sum u-boot/$atf_file | cut -c1-64) ]; then
+        echo "invalid hash for atf binary: u-boot/$atf_file"
+        exit 5
+    fi
+
+    # outputs: idbloader.img, idbloader-spi.img, and u-boot.itb
+    rm -f idbloader*.img u-boot.itb
+    if [ '_inc' != "_$1" ]; then
+        make -C u-boot distclean
+        make -C u-boot rock-pi-4c-plus-rk3399_defconfig
+    fi
+    make -C u-boot -j$(nproc) BL31=$atf_file
+    ln -sfv u-boot/idbloader.img
+    ln -sfv u-boot/idbloader-spi.img
+    ln -sfv u-boot/u-boot.itb
+
+    # make spi image file
+    #dd bs=64K count=64 if=/dev/zero | tr '\000' '\377' > rockpi-4cplus-uboot-spi.img
+    #dd bs=4K seek=8 if=u-boot/idbloader-spi.img of=rockpi-4cplus-uboot-spi.img conv=notrunc
+    #dd bs=4K seek=512 if=u-boot/u-boot.itb of=rockpi-4cplus-uboot-spi.img conv=notrunc,fsync
+
+    echo "\n${cya}idbloader and u-boot binaries are now ready${rst}"
+    echo "\n${cya}copy images to media:${rst}"
+    echo "  ${cya}sudo dd bs=4K seek=8 if=idbloader.img of=/dev/sdX conv=notrunc${rst}"
+    echo "  ${cya}sudo dd bs=4K seek=2048 if=u-boot.itb of=/dev/sdX conv=notrunc,fsync${rst}"
+    echo
+    echo "${blu}optionally, flash to spi (apt install mtd-utils):${rst}"
+    echo "  ${blu}sudo flashcp -v idbloader-spi.img /dev/mtd0${rst}"
+    echo "  ${blu}sudo flashcp -v u-boot.itb /dev/mtd2${rst}"
+    echo
+}
+
+check_installed() {
+    local todo
+    for item in "$@"; do
+        dpkg -l "$item" 2>/dev/null | grep -q "ii  $item" || todo="$todo $item"
+    done
+
+    if [ ! -z "$todo" ]; then
+        echo "this script requires the following packages:${bld}${yel}$todo${rst}"
+        echo "   run: ${bld}${grn}sudo apt update && sudo apt -y install$todo${rst}\n"
+        exit 1
+    fi
+}
+
+rst='\033[m'
+bld='\033[1m'
+red='\033[31m'
+grn='\033[32m'
+yel='\033[33m'
+blu='\033[34m'
+mag='\033[35m'
+cya='\033[36m'
+h1="${blu}==>${rst} ${bld}"
+
+main $@
+

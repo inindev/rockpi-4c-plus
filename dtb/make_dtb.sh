@@ -2,41 +2,75 @@
 
 set -e
 
-# prerequisites: build-essential device-tree-compiler
-# kernel.org linux version
+# script exit codes:
+#   1: missing utility
+#   5: invalid file hash
 
 main() {
-    local lv='6.0.6'
+    local linux='https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.3.7.tar.xz'
+    local lxsha='fe369743996c522a7b473e99dcf8f88847bd5cc88546fd3b7a41d9fe5a5b97a9'
 
-    if [ 'clean' = "$1" ]; then
-        rm -f *.dtb *-top.dts
-        rm -rf "linux-$lv"
+    local lf=$(basename $linux)
+    local lv=$(echo $lf | sed -nE 's/linux-(.*)\.tar\..z/\1/p')
+
+    if [ '_clean' = "_$1" ]; then
+        rm -f *.dtb *-top.dts *.dtsi
+        rm -rf linux-$lv
         echo '\nclean complete\n'
         exit 0
     fi
 
-    if [ ! -f "linux-$lv.tar.xz" ]; then
-        wget "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$lv.tar.xz"
+    check_installed 'device-tree-compiler' 'gcc' 'wget' 'xz-utils'
+
+    [ -f $lf ] || wget $linux
+
+    if [ _$lxsha != _$(sha256sum $lf | cut -c1-64) ]; then
+        echo "invalid hash for linux source file: $lf"
+        exit 5
     fi
 
-    local lrcp="linux-$lv/arch/arm64/boot/dts/rockchip"
-    if [ ! -d "linux-$lv" ]; then
-        tar "xavf" "linux-$lv.tar.xz" "linux-$lv/include/dt-bindings" "linux-$lv/include/uapi" "$lrcp"
-        ln -s '../../../../../../rk3399-t-opp.dtsi' "$lrcp"
-        ln -s '../../../../../../rk3399-rock-pi-4c-plus.dts' "$lrcp"
+    local rkpath=linux-$lv/arch/arm64/boot/dts/rockchip
+    if [ ! -d linux-$lv ]; then
+        tar xavf $lf linux-$lv/include/dt-bindings linux-$lv/include/uapi $rkpath
+        ln -sf '../../../../../../rk3399-rock-pi-4c-plus.dts' $rkpath
     fi
 
-    if [ 'links' = "$1" ]; then
-        ln -sf "$lrcp/rk3399.dtsi"
-        echo '\nlink created\n'
+    if [ _links = _$1 ]; then
+        ln -sfv $rkpath/rk3399-t-opp.dtsi
+        ln -sfv $rkpath/rk3399.dtsi
+        echo '\nlinks created\n'
         exit 0
     fi
 
     # build
-    gcc -I "linux-$lv/include" -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp -o rk3399-rock-pi-4c-plus-top.dts "$lrcp/rk3399-rock-pi-4c-plus.dts"
-    dtc -@ -I dts -O dtb -o rk3399-rock-pi-4c-plus.dtb rk3399-rock-pi-4c-plus-top.dts
-
-    echo '\nbuild complete: rk3399-rock-pi-4c-plus.dtb\n'
+    local dt=rk3399-rock-pi-4c-plus
+    gcc -I linux-$lv/include -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp -o ${dt}-top.dts $rkpath/${dt}.dts
+    dtc -@ -I dts -O dtb -o ${dt}.dtb ${dt}-top.dts
+    echo "\n${cya}device tree ready: ${dt}.dtb${rst}\n"
 }
 
-main "$1"
+check_installed() {
+    local todo
+    for item in "$@"; do
+        dpkg -l "$item" 2>/dev/null | grep -q "ii  $item" || todo="$todo $item"
+    done
+
+    if [ ! -z "$todo" ]; then
+        echo "this script requires the following packages:${bld}${yel}$todo${rst}"
+        echo "   run: ${bld}${grn}sudo apt update && sudo apt -y install$todo${rst}\n"
+        exit 1
+    fi
+}
+
+rst='\033[m'
+bld='\033[1m'
+red='\033[31m'
+grn='\033[32m'
+yel='\033[33m'
+blu='\033[34m'
+mag='\033[35m'
+cya='\033[36m'
+h1="${blu}==>${rst} ${bld}"
+
+main $@
+
