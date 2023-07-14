@@ -7,45 +7,46 @@ set -e
 #   5: invalid file hash
 
 main() {
-    local linux='https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.3.7.tar.xz'
-    local lxsha='fe369743996c522a7b473e99dcf8f88847bd5cc88546fd3b7a41d9fe5a5b97a9'
+    local linux='https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.4.3.tar.xz'
+    local lxsha='7134ed29360df6f37a26410630283f0592c91a6d2178a9648226d30ddf8c88a1'
 
-    local lf=$(basename $linux)
-    local lv=$(echo $lf | sed -nE 's/linux-(.*)\.tar\..z/\1/p')
+    local lf="$(basename "$linux")"
+    local lv="$(echo "$lf" | sed -nE 's/linux-(.*)\.tar\..z/\1/p')"
 
     if [ '_clean' = "_$1" ]; then
         rm -f *.dtb *-top.dts *.dtsi
-        rm -rf linux-$lv
+        rm -rf "linux-$lv"
         echo '\nclean complete\n'
         exit 0
     fi
 
     check_installed 'device-tree-compiler' 'gcc' 'wget' 'xz-utils'
 
-    [ -f $lf ] || wget $linux
+    [ -f "$lf" ] || wget "$linux"
 
-    if [ _$lxsha != _$(sha256sum $lf | cut -c1-64) ]; then
+    if [ "_$lxsha" != _$(sha256sum "$lf" | cut -c1-64) ]; then
         echo "invalid hash for linux source file: $lf"
         exit 5
     fi
 
-    local rkpath=linux-$lv/arch/arm64/boot/dts/rockchip
-    if [ ! -d linux-$lv ]; then
-        tar xavf $lf linux-$lv/include/dt-bindings linux-$lv/include/uapi $rkpath
-        ln -sf '../../../../../../rk3399-rock-pi-4c-plus.dts' $rkpath
+    local rkpath="linux-$lv/arch/arm64/boot/dts/rockchip"
+    if ! [ -d "linux-$lv" ]; then
+        tar xavf "$lf" "linux-$lv/include/dt-bindings" "linux-$lv/include/uapi" "$rkpath"
+        ln -sf '../../../../../../rk3399-rock-pi-4c-plus.dts' "$rkpath"
     fi
 
-    if [ _links = _$1 ]; then
-        ln -sfv $rkpath/rk3399-t-opp.dtsi
-        ln -sfv $rkpath/rk3399.dtsi
+    if [ '_links' = "_$1" ]; then
+        ln -sfv "$rkpath/rk3399-t-opp.dtsi"
+        ln -sfv "$rkpath/rk3399.dtsi"
         echo '\nlinks created\n'
         exit 0
     fi
 
     # build
-    local dt=rk3399-rock-pi-4c-plus
-    gcc -I linux-$lv/include -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp -o ${dt}-top.dts $rkpath/${dt}.dts
-    dtc -@ -I dts -O dtb -o ${dt}.dtb ${dt}-top.dts
+    local dt='rk3399-rock-pi-4c-plus'
+    local fldtc='-Wno-interrupt_provider -Wno-unique_unit_address -Wno-unit_address_vs_reg -Wno-avoid_unnecessary_addr_size -Wno-alias_paths -Wno-graph_child_address -Wno-simple_bus_reg'
+    gcc -I "linux-$lv/include" -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp -o "${dt}-top.dts" "$rkpath/${dt}.dts"
+    dtc -I dts -O dtb -b 0 ${fldtc} -o "${dt}.dtb" "${dt}-top.dts"
     echo "\n${cya}device tree ready: ${dt}.dtb${rst}\n"
 }
 
@@ -72,5 +73,5 @@ mag='\033[35m'
 cya='\033[36m'
 h1="${blu}==>${rst} ${bld}"
 
-main $@
+main "$@"
 
