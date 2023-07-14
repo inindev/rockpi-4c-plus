@@ -19,9 +19,15 @@ main() {
     local acct_uid='debian'
     local acct_pass='debian'
     local disable_ipv6=true
-    local extra_pkgs='curl, pciutils, sudo, u-boot-tools, unzip, wget, xxd, xz-utils, zip, zstd'
+    local extra_pkgs='curl, pciutils, sudo, u-boot-tools, wget, xxd, xz-utils, zip, zstd'
 
-    is_param 'clean' $@ && rm -rf cache.* && rm "$media"* && exit 0
+    if is_param 'clean' $@; then
+        rm -rf cache*/var
+        rm -f "$media"*
+        rm -rf rootfs
+        echo '\nclean complete\n'
+        exit 0
+    fi
 
     if [ -f "$media" ]; then
         read -p "file $media exists, overwrite? <y/N> " yn
@@ -53,12 +59,12 @@ main() {
     local bfw=$(download "$cache" 'https://github.com/murata-wireless/cyw-bt-patch/raw/master/BCM4345C0_003.001.025.0187.0366.1MW.hcd')
     local bfwsha='c903509c43baf812283fbd10c65faab3b0735e09bd57c5a9e9aa97cf3f274d3b'
     # device tree & uboot
-#    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/rk3399-rock-pi-4c-plus.dtb')
-    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
-#    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/idbloader.img')
-    local uboot_spl='../uboot/idbloader.img'
-#    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/u-boot.itb')
-    local uboot_itb='../uboot/u-boot.itb'
+    local dtb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/rk3399-rock-pi-4c-plus.dtb')
+#    local dtb='../dtb/rk3399-rock-pi-4c-plus.dtb'
+    local uboot_spl=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/idbloader.img')
+#    local uboot_spl='../uboot/idbloader.img'
+    local uboot_itb=$(download "$cache" 'https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/u-boot.itb')
+#    local uboot_itb='../uboot/u-boot.itb'
 
     if [ "$lfwsha" != $(sha256sum "$lfw" | cut -c1-64) ]; then
         echo "invalid hash for linux firmware: $lfw"
@@ -104,7 +110,7 @@ main() {
     mount -o bind "$cache/var/cache" "$mountpt/var/cache"
     mount -o bind "$cache/var/lib/apt/lists" "$mountpt/var/lib/apt/lists"
 
-    # install debian linux from official repo packages
+    # install debian linux from deb packages (debootstrap)
     print_hdr "installing root filesystem from debian.org"
     mkdir "$mountpt/etc"
     echo 'link_in_boot = 1' > "$mountpt/etc/kernel-img.conf"
@@ -125,8 +131,11 @@ main() {
     rm -f "$mountpt/etc/systemd/system/multi-user.target.wants/ssh.service"
     rm -f "$mountpt/etc/ssh/ssh_host_"*
 
+    # generate machine id on first boot
     rm -f "$mountpt/etc/machine.id"
     rm -f "$mountpt/etc/systemd/system/multi-user.target.wants/wpa_supplicant.service"
+
+    # wireless
     echo "$(file_wpa_supplicant_conf)\n" > "$mountpt/etc/wpa_supplicant/wpa_supplicant.conf"
     cp "$mountpt/usr/share/dhcpcd/hooks/10-wpa_supplicant" "$mountpt/usr/lib/dhcpcd/dhcpcd-hooks"
 
@@ -226,21 +235,26 @@ parition_media() {
 
 format_media() {
     local media="$1"
+    local partnum="${2:-1}"
 
     # create ext4 filesystem
     if [ -b "$media" ]; then
-        local part1="/dev/$(lsblk -no kname "$media" | grep '.*p1$')"
-        mkfs.ext4 "$part1" && sync
+        local rdn="$(basename "$media")"
+        local sbpn="$(echo /sys/block/${rdn}/${rdn}*${partnum})"
+        local part="/dev/$(basename "$sbpn")"
+        mkfs.ext4 -L rootfs -vO metadata_csum_seed "$part" && sync
     else
         local lodev="$(losetup -f)"
-        losetup -P "$lodev" "$media" && sync
-        mkfs.ext4 "${lodev}p1" && sync
-        losetup -d "$lodev" && sync
+        losetup -vP "$lodev" "$media" && sync
+        mkfs.ext4 -L rootfs -vO metadata_csum_seed "${lodev}p${partnum}" && sync
+        losetup -vd "$lodev" && sync
     fi
 }
 
+
 mount_media() {
     local media="$1"
+    local partnum="1"
 
     if [ -d "$mountpt" ]; then
         echo "cleaning up mount points..."
@@ -251,11 +265,17 @@ mount_media() {
         mkdir -p "$mountpt"
     fi
 
+    local success_msg
     if [ -b "$media" ]; then
-        local part1="/dev/$(lsblk -no kname "$media" | grep '.*p1$')"
-        mount -n "$part1" "$mountpt"
+        local rdn="$(basename "$media")"
+        local sbpn="$(echo /sys/block/${rdn}/${rdn}*${partnum})"
+        local part="/dev/$(basename "$sbpn")"
+        mount -n "$part" "$mountpt"
+        success_msg="partition ${cya}$part${rst} successfully mounted on ${cya}$mountpt${rst}"
     elif [ -f "$media" ]; then
+        # hard-coded to p1
         mount -n -o loop,offset=16M "$media" "$mountpt"
+        success_msg="media ${cya}$media${rst} partition 1 successfully mounted on ${cya}$mountpt${rst}"
     else
         echo "file not found: $media"
         exit 4
@@ -266,7 +286,7 @@ mount_media() {
         exit 3
     fi
 
-    echo "media ${cya}$media${rst} successfully mounted on ${cya}$mountpt${rst}"
+    echo "$success_msg"
 }
 
 check_mount_only() {
@@ -328,7 +348,7 @@ download() {
 
     [ -d "$cache" ] || mkdir -p "$cache"
 
-    local filename=$(basename "$url")
+    local filename="$(basename "$url")"
     local filepath="$cache/$filename"
     [ -f "$filepath" ] || wget "$url" -P "$cache"
     [ -f "$filepath" ] || exit 2
@@ -345,7 +365,7 @@ check_installed() {
 
     if [ ! -z "$todo" ]; then
         echo "this script requires the following packages:${bld}${yel}$todo${rst}"
-        echo "   run: ${bld}${grn}apt update && apt -y install$todo${rst}\n"
+        echo "   run: ${bld}${grn}sudo apt update && sudo apt -y install$todo${rst}\n"
         exit 1
     fi
 }
@@ -406,7 +426,7 @@ script_rc_local() {
 
 	if [ 774 -eq \$perm ]; then
 	    # expand fs
-	    resize2fs \$(findmnt / -o source -n)
+	    resize2fs "\$(findmnt -no source /)"
 	    rm "\$this"
 	    systemctl stop rc-local.service
 	else
@@ -415,11 +435,16 @@ script_rc_local() {
 	    systemctl enable ssh.service
 
 	    # expand root parition & change uuid
-	    rp=\$(findmnt / -o source -n)
-	    rpn=\$(echo "\$rp" | grep -o '[[:digit:]]*\$')
-	    rd=/dev/\$(lsblk -no pkname \$rp)
-	    uuid=\$(cat /proc/sys/kernel/random/uuid)
-	    echo "size=+, uuid=\$uuid" | sfdisk -f -N \$rpn \$rd
+	    rp="\$(findmnt -no source /)"
+	    rpn="\$(echo "\$rp" | grep -Eo '[[:digit:]]*\$')"
+	    rd="/dev/\$(lsblk -no pkname "\$rp")"
+	    uuid="\$(cat /proc/sys/kernel/random/uuid)"
+	    echo "size=+, uuid=\$uuid" | sfdisk -f -N "\$rpn" "\$rd"
+
+	    # change rootfs uuid
+	    uuid="\$(cat /proc/sys/kernel/random/uuid)"
+	    echo "changing rootfs uuid: \$uuid"
+	    tune2fs -U "\$uuid" "\$rp"
 
 	    # setup for expand fs
 	    chmod 774 "\$this"
@@ -513,11 +538,11 @@ h1="${blu}==>${rst} ${bld}"
 
 if [ 0 -ne $(id -u) ]; then
     echo 'this script must be run as root'
-    echo "   run: ${bld}${grn}sudo sh make_debian_img.sh${rst}\n"
+    echo "   run: ${bld}${grn}sudo sh $(basename "$0")${rst}\n"
     exit 9
 fi
 
 cd "$(dirname "$(readlink -f "$0")")"
-check_mount_only $@
-main $@
+check_mount_only "$@"
+main "$@"
 
