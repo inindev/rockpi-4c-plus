@@ -67,7 +67,7 @@ main() {
     [ -f "$uboot_itb" ] || { echo "unable to fetch: $uboot_itb"; exit 4; }
 
     # dtb
-    local dtb=$(download "$cache" "https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/rk3399-rock-pi-4c-plus.dtb")
+    local dtb=$(download "$cache" "https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/rk3399-rock-4c-plus.dtb")
     [ -f "$dtb" ] || { echo "unable to fetch $dtb"; exit 4; }
 
     # bluetooth firmware
