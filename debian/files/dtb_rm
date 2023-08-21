@@ -7,7 +7,7 @@
 # /boot after a kernel is package removed
 
 version="$1"
-target="/boot/rk3399-rock-pi-4c-plus.dtb-${version}"
+target="/boot/rk3399-rock-4c-plus.dtb-${version}"
 
 # passing the kernel version is required
 if [ -z "${version}" ]; then

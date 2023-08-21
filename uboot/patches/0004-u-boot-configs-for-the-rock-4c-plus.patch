@@ -1,18 +1,18 @@
-From 32c015b59ea20c7d2ac169ffa5ff907b51d76bd0 Mon Sep 17 00:00:00 2001
+From 40808ff8c00b8a164496e111417b5cc5089840d3 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Wed, 5 Apr 2023 07:01:04 -0400
-Subject: [PATCH 3/4] u-boot configs for the rockpi-4c-plus
+Subject: [PATCH 4/4] u-boot configs for the rock-4c-plus
 
 ---
- configs/rock-pi-4c-plus-rk3399_defconfig | 105 +++++++++++++++++++++++
+ configs/rock-4c-plus-rk3399_defconfig | 105 ++++++++++++++++++++++++++
  1 file changed, 105 insertions(+)
- create mode 100644 configs/rock-pi-4c-plus-rk3399_defconfig
+ create mode 100644 configs/rock-4c-plus-rk3399_defconfig
 
-diff --git a/configs/rock-pi-4c-plus-rk3399_defconfig b/configs/rock-pi-4c-plus-rk3399_defconfig
+diff --git a/configs/rock-4c-plus-rk3399_defconfig b/configs/rock-4c-plus-rk3399_defconfig
 new file mode 100644
-index 0000000000..eefcbdf198
+index 0000000000..4ec47ca499
 --- /dev/null
-+++ b/configs/rock-pi-4c-plus-rk3399_defconfig
++++ b/configs/rock-4c-plus-rk3399_defconfig
 @@ -0,0 +1,105 @@
 +CONFIG_ARM=y
 +CONFIG_SKIP_LOWLEVEL_INIT=y
@@ -23,7 +23,7 @@ index 0000000000..eefcbdf198
 +CONFIG_HAS_CUSTOM_SYS_INIT_SP_ADDR=y
 +CONFIG_CUSTOM_SYS_INIT_SP_ADDR=0x300000
 +CONFIG_ENV_SIZE=0x10000
-+CONFIG_DEFAULT_DEVICE_TREE="rk3399-rock-pi-4c-plus"
++CONFIG_DEFAULT_DEVICE_TREE="rk3399-rock-4c-plus"
 +CONFIG_DM_RESET=y
 +CONFIG_ROCKCHIP_RK3399=y
 +CONFIG_ROCKCHIP_SPI_IMAGE=y
@@ -40,7 +40,7 @@ index 0000000000..eefcbdf198
 +CONFIG_SPL_FIT_SIGNATURE=y
 +CONFIG_LEGACY_IMAGE_FORMAT=y
 +CONFIG_DISTRO_DEFAULTS=y
-+CONFIG_DEFAULT_FDT_FILE="rk3399-rock-pi-4c-plus.dtb"
++CONFIG_DEFAULT_FDT_FILE="rockchip/rk3399-rock-4c-plus.dtb"
 +CONFIG_DISPLAY_BOARDINFO_LATE=y
 +CONFIG_MISC_INIT_R=y
 +CONFIG_SPL_MAX_SIZE=0x2e000
@@ -120,5 +120,5 @@ index 0000000000..eefcbdf198
 +CONFIG_ERRNO_STR=y
 +CONFIG_OF_LIBFDT_OVERLAY=y
 -- 
-2.39.2
+2.40.1
 

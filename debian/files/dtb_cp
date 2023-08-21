@@ -7,9 +7,9 @@
 # after a new kernel is package installed
 
 version="$1"
-source1='/boot/rk3399-rock-pi-4c-plus.dtb'
-source2="/usr/lib/linux-image-${version}/rockchip/rk3399-rock-pi-4c-plus.dtb"
-target="/boot/rk3399-rock-pi-4c-plus.dtb-${version}"
+source1='/boot/rk3399-rock-4c-plus.dtb'
+source2="/usr/lib/linux-image-${version}/rockchip/rk3399-rock-4c-plus.dtb"
+target="/boot/rk3399-rock-4c-plus.dtb-${version}"
 
 # passing the kernel version is required
 if [ -z "${version}" ]; then

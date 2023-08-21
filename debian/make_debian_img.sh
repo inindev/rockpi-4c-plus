@@ -113,13 +113,13 @@ main() {
     local lfwbn="${lfwn%%.*}"
     tar -C "$mountpt/usr/lib/firmware" --strip-components=1 --wildcards -xavf "$lfw" "$lfwbn/rockchip" "$lfwbn/rtl_nic" "$lfwbn/brcm/brcmfmac43455-sdio.AW-CM256SM.txt" "$lfwbn/cypress/cyfmac43455-sdio.*"
 
-    ln -svf "brcmfmac43455-sdio.AW-CM256SM.txt" "$mountpt/usr/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.txt"
-    ln -svf "../cypress/cyfmac43455-sdio.bin" "$mountpt/usr/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rockpi4c-plus.bin"
-    ln -svf "../cypress/cyfmac43455-sdio.clm_blob" "$mountpt/usr/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob"
+    ln -svf "brcmfmac43455-sdio.AW-CM256SM.txt" "$mountpt/usr/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rock-4c-plus.txt"
+    ln -svf "../cypress/cyfmac43455-sdio.bin" "$mountpt/usr/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rock-4c-plus.bin"
+    ln -svf "../cypress/cyfmac43455-sdio.clm_blob" "$mountpt/usr/lib/firmware/brcm/brcmfmac43455-sdio.radxa,rock-4c-plus.clm_blob"
 
     local bfwn=$(basename "$bfw")
     cp -v "$bfw" "$mountpt/usr/lib/firmware/brcm"
-    ln -svf "$bfwn" "$mountpt/usr/lib/firmware/brcm/BCM4345C0.radxa,rockpi4c-plus.hcd"
+    ln -svf "$bfwn" "$mountpt/usr/lib/firmware/brcm/BCM4345C0.radxa,rock-4c-plus.hcd"
 
     # install device tree
     install -vm 644 "$dtb" "$mountpt/boot"

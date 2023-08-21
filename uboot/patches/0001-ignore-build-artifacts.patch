@@ -1,7 +1,7 @@
-From e4776c7bdc50ff80930c7c39ba3e2783f52ac079 Mon Sep 17 00:00:00 2001
+From fab72a782528a867133b13a39cb3115c8168acc4 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Wed, 5 Apr 2023 08:48:52 -0400
-Subject: [PATCH 4/4] ignore build artifacts
+Subject: [PATCH 1/4] ignore build artifacts
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
@@ -38,5 +38,5 @@ index 3a4d056edf..23ec59275b 100644
  #
  # Generated include files
 -- 
-2.39.2
+2.40.1
 
