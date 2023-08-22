@@ -1,7 +1,7 @@
-From a81a10a15d730738caf942d431a0c2fca0c8854e Mon Sep 17 00:00:00 2001
+From 31dc76b56d312a9fc6d09a5329694e5afea646ff Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Sun, 30 Jul 2023 22:37:38 +0000
-Subject: [PATCH] enable spi flash
+Subject: [PATCH 3/3] enable spi flash
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: John Clark <inindev@gmail.com>
  1 file changed, 104 insertions(+), 6 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/rockchip/rk3399-rock-4c-plus.dts b/arch/arm64/boot/dts/rockchip/rk3399-rock-4c-plus.dts
-index 028eb50..8d20d5c 100644
+index f194075..caecaf0 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3399-rock-4c-plus.dts
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-rock-4c-plus.dts
 @@ -71,6 +71,18 @@
@@ -132,7 +132,7 @@ index 028eb50..8d20d5c 100644
  		};
  	};
  
-@@ -593,6 +654,43 @@
+@@ -592,6 +653,43 @@
  	status = "okay";
  };
  
