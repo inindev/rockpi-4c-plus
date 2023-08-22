@@ -1,9 +1,9 @@
 # rockpi-4c-plus
 #### *Stock Debian ARM64 Linux for the Radxa ROCK (Pi) 4C+*
 
-This stock Debian ARM64 Linux image is built directly from official packages using the official Debian [Debootstrap](https://wiki.debian.org/Debootstrap) utility, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L114
+This stock Debian ARM64 Linux image is built directly from official packages using the official Debian [Debootstrap](https://wiki.debian.org/Debootstrap) utility, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L139
 
-Being an official unmodified Debian build, patches are directory available from the Debian repos using the stock **apt** package manager, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L360
+Being an official unmodified Debian build, patches are directory available from the Debian repos using the stock **apt** package manager, see: https://github.com/inindev/rockpi-4c-plus/blob/main/debian/make_debian_img.sh#L368-L378
 
 If you want to run true up-stream Debian Linux on your ARM64 device, this is the way to do it.
 
@@ -16,7 +16,7 @@ If you want to run true up-stream Debian Linux on your ARM64 device, this is the
 
 **1. download image**
 ```
-wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0/rockpi-4c-plus_bookworm.img.xz
+wget https://github.com/inindev/rockpi-4c-plus/releases/download/v12.0.1/rockpi-4c-plus_bookworm-1201.img.xz
 ```
 
 <br/>
@@ -40,10 +40,10 @@ brw-rw---- 1 root disk 8, 0 Sep  8 20:58 /dev/sda
 
 **3. in the case above, substitute 'a' for 'X' in the command below (for /dev/sda)**
 ```
-sudo sh -c 'xzcat rockpi-4c-plus_bookworm.img.xz > /dev/sdX && sync'
+sudo sh -c 'xzcat rockpi-4c-plus_bookworm-1201.img.xz > /dev/sdX && sync'
 ```
 
-#### when the micro sd has finished imaging, eject and use it to boot the rockpi 4c+ to finish setup
+#### when the micro sd has finished imaging, eject and use it to boot the rock 4c+ to finish setup
 
 <br/>
 
@@ -95,13 +95,11 @@ sudo nano /etc/hosts
 
 
 ---
-### building debian bookworm arm64 for the rockpi 4c+ from scratch
+### building debian bookworm arm64 for the rock 4c+ from scratch
 
 <br/>
 
-The build script builds native arm64 binaries and thus needs to be run from an arm64 device such as a raspberry pi4 running 
-a 64 bit arm linux. The initial build of this project used a debian arm64 raspberry pi4, but now uses a rockpi 4c+ running 
-stock debian bookworm arm64.
+The build script builds native arm64 binaries and thus needs to be run from an arm64 device such as a raspberry pi4 running a 64 bit arm linux. The initial build of this project used a debian arm64 raspberry pi4, but now uses a rock 5b running stock debian trixie arm64.
 
 <br/>
 
