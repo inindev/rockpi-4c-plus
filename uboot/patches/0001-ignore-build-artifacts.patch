@@ -1,15 +1,15 @@
-From fab72a782528a867133b13a39cb3115c8168acc4 Mon Sep 17 00:00:00 2001
+From 06349c41fac2e935a8a0554cf8835204bbe151b9 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
-Date: Wed, 5 Apr 2023 08:48:52 -0400
-Subject: [PATCH 1/4] ignore build artifacts
+Date: Tue, 22 Aug 2023 01:14:45 +0000
+Subject: [PATCH 1/3] ignore build artifacts
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
- .gitignore | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ .gitignore | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
-index 3a4d056edf..23ec59275b 100644
+index 002f95de4f..da0d391007 100644
 --- a/.gitignore
 +++ b/.gitignore
 @@ -35,7 +35,7 @@
@@ -21,22 +21,28 @@ index 3a4d056edf..23ec59275b 100644
  
  #
  # Top-level generic files
-@@ -44,6 +44,7 @@ fit-dtb.blob*
+@@ -44,6 +44,10 @@ fit-dtb.blob*
  /MLO*
  /SPL*
  /System.map
++/drivers/video/u_boot_logo.S
++/mkimage-in-simple-bin*
 +/simple-bin*
++/tools/generated
  /u-boot*
  /boards.cfg
  /*.log
-@@ -60,6 +61,7 @@ fit-dtb.blob*
- /spl/
- /tpl/
- /defconfig
-+/drivers/video/u_boot_logo.S
- 
+@@ -65,7 +69,9 @@ fit-dtb.blob*
  #
  # Generated include files
+ #
+-/include/config/
++include/autoconf.mk*
++/include/bmp_logo*
++/include/config*
+ /include/generated/
+ 
+ # stgit generated dirs
 -- 
 2.40.1
 

@@ -1,36 +1,210 @@
-From 5a86d03f240ff895a09ea334b6876aa208da504c Mon Sep 17 00:00:00 2001
+From 795755a2e234b5289ac88b1ba8690d796d1c4904 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Wed, 5 Apr 2023 07:43:23 -0400
-Subject: [PATCH 3/4] add rk3399-rock-4c-plus device tree
+Subject: [PATCH 2/3] add spi flash to rk3399-rock-4c-plus device tree
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
- arch/arm/dts/Makefile                        |   1 +
- arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi |  16 +
- arch/arm/dts/rk3399-rock-4c-plus.dts         | 805 +++++++++++++++++++
- arch/arm/dts/rk3399-t-opp.dtsi               | 114 +++
- 4 files changed, 936 insertions(+)
- create mode 100644 arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi
- create mode 100644 arch/arm/dts/rk3399-rock-4c-plus.dts
- create mode 100644 arch/arm/dts/rk3399-t-opp.dtsi
+ arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi  |  10 +
+ arch/arm/dts/rk3399-rock-4c-plus.dts          | 110 ++-
+ .../dts/rk3399-rock-pi-4c-plus-u-boot.dtsi    |  16 +
+ arch/arm/dts/rk3399-rock-pi-4c-plus.dts       | 805 ++++++++++++++++++
+ 4 files changed, 935 insertions(+), 6 deletions(-)
+ create mode 100644 arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi
+ create mode 100644 arch/arm/dts/rk3399-rock-pi-4c-plus.dts
 
-diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index c160e884bf..4b60746366 100644
---- a/arch/arm/dts/Makefile
-+++ b/arch/arm/dts/Makefile
-@@ -157,6 +157,7 @@ dtb-$(CONFIG_ROCKCHIP_RK3399) += \
- 	rk3399-puma-haikou.dtb \
- 	rk3399-roc-pc.dtb \
- 	rk3399-roc-pc-mezzanine.dtb \
-+	rk3399-rock-4c-plus.dts \
- 	rk3399-rock-pi-4a.dtb \
- 	rk3399-rock-pi-4b.dtb \
- 	rk3399-rock-pi-4c.dtb \
 diff --git a/arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi b/arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi
+index 5c1c451b8f..e223f761e5 100644
+--- a/arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi
+@@ -2,4 +2,14 @@
+ /*
+  * Copyright (c) 2023 Radxa Limited
+  */
++
+ #include "rk3399-rock-pi-4-u-boot.dtsi"
++
++
++&sdio0 {
++	status = "disabled";
++};
++
++&spi_flash {
++	u-boot,dm-pre-reloc;
++};
+diff --git a/arch/arm/dts/rk3399-rock-4c-plus.dts b/arch/arm/dts/rk3399-rock-4c-plus.dts
+index 8bfd5f88d1..4d7108e980 100644
+--- a/arch/arm/dts/rk3399-rock-4c-plus.dts
++++ b/arch/arm/dts/rk3399-rock-4c-plus.dts
+@@ -71,6 +71,18 @@
+ 		vin-supply = <&vcc3v3_sys>;
+ 	};
+ 
++	vcc3v3_pcie: vcc3v3-pcie-regulator {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pcie_drv>;
++		regulator-boot-on;
++		regulator-name = "vcc3v3_pcie";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
+ 	vcc3v3_phy1: vcc3v3-phy1-regulator {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "vcc3v3_phy1";
+@@ -438,12 +450,40 @@
+ 	};
+ };
+ 
++&i2c1 {
++	i2c-scl-rising-time-ns = <450>;
++	i2c-scl-falling-time-ns = <15>;
++	status = "okay";
++};
++
+ &i2c3 {
+ 	i2c-scl-rising-time-ns = <450>;
+ 	i2c-scl-falling-time-ns = <15>;
+ 	status = "okay";
+ };
+ 
++&i2s0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2s0_2ch_bus>;
++	/delete-property/ pinctrl-1;
++	rockchip,capture-channels = <2>;
++	rockchip,playback-channels = <2>;
++	status = "okay";
++};
++
++/*
++ * I2S0_LRCK_RX is used as GPIO for PCIE_PWR. Therefore we have to
++ * redefine the i2s0_2ch_bus definition to prevent conflicts.
++ */
++&i2s0_2ch_bus {
++	rockchip,pins =
++		<3 RK_PD0 1 &pcfg_pull_none>,
++		<3 RK_PD2 1 &pcfg_pull_none>,
++		<3 RK_PD3 1 &pcfg_pull_none>,
++		<3 RK_PD7 1 &pcfg_pull_none>,
++		<4 RK_PA0 1 &pcfg_pull_none>;
++};
++
+ &i2s2 {
+ 	status = "okay";
+ };
+@@ -456,6 +496,21 @@
+ 	status = "okay";
+ };
+ 
++&pcie_phy {
++	status = "okay";
++};
++
++&pcie0 {
++	ep-gpios = <&gpio1 RK_PA1 GPIO_ACTIVE_HIGH>;
++	num-lanes = <4>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pcie_clkreqnb_cpm>;
++	vpcie0v9-supply = <&vcc_0v9_s3>;
++	vpcie1v8-supply = <&vcc_1v8_s3>;
++	vpcie3v3-supply = <&vcc3v3_pcie>;
++	status = "okay";
++};
++
+ &pinctrl {
+ 	bt {
+ 		bt_enable_h: bt-enable-h {
+@@ -481,6 +536,12 @@
+ 		};
+ 	};
+ 
++	pcie {
++		pcie_drv: pcie-drv {
++			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
+ 	pmic {
+ 		pmic_int_l: pmic-int-l {
+ 			rockchip,pins = <1 RK_PC5 RK_FUNC_GPIO &pcfg_pull_up>;
+@@ -497,18 +558,18 @@
+ 
+ 	sdmmc {
+ 		sdmmc_bus4: sdmmc-bus4 {
+-			rockchip,pins = <4 8 1 &pcfg_pull_up_8ma>,
+-					<4 9 1 &pcfg_pull_up_8ma>,
+-					<4 10 1 &pcfg_pull_up_8ma>,
+-					<4 11 1 &pcfg_pull_up_8ma>;
++			rockchip,pins = <4 RK_PB0 1 &pcfg_pull_up_8ma>,
++					<4 RK_PB1 1 &pcfg_pull_up_8ma>,
++					<4 RK_PB2 1 &pcfg_pull_up_8ma>,
++					<4 RK_PB3 1 &pcfg_pull_up_8ma>;
+ 		};
+ 
+ 		sdmmc_clk: sdmmc-clk {
+-			rockchip,pins = <4 12 1 &pcfg_pull_none_18ma>;
++			rockchip,pins = <4 RK_PB4 1 &pcfg_pull_none_18ma>;
+ 		};
+ 
+ 		sdmmc_cmd: sdmmc-cmd {
+-			rockchip,pins = <4 13 1 &pcfg_pull_up_8ma>;
++			rockchip,pins = <4 RK_PB5 1 &pcfg_pull_up_8ma>;
+ 		};
+ 	};
+ 
+@@ -592,6 +653,43 @@
+ 	status = "okay";
+ };
+ 
++&spi1 {
++	status = "okay";
++
++	spi_flash: flash@0 {
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		m25p,fast-read;
++		spi-max-frequency = <40000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			partition@0 {
++				label = "u-boot-spl";
++				reg = <0x0 0x100000>;
++			};
++
++			partition@100000 {
++				label = "u-boot-env";
++				reg = <0x100000 0x10000>;
++			};
++
++			partition@200000 {
++				label = "u-boot";
++				reg = <0x200000 0x200000>;
++			};
++
++			partition@400000 {
++				label = "unused";
++				reg = <0x400000 0x400000>;
++			};
++		};
++	};
++};
++
+ &tcphy0 {
+ 	status = "okay";
+ };
+diff --git a/arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi b/arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi
 new file mode 100644
 index 0000000000..0103b3ffb8
 --- /dev/null
-+++ b/arch/arm/dts/rk3399-rock-4c-plus-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-rock-pi-4c-plus-u-boot.dtsi
 @@ -0,0 +1,16 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
@@ -48,11 +222,11 @@ index 0000000000..0103b3ffb8
 +	u-boot,dm-pre-reloc;
 +};
 +
-diff --git a/arch/arm/dts/rk3399-rock-4c-plus.dts b/arch/arm/dts/rk3399-rock-4c-plus.dts
+diff --git a/arch/arm/dts/rk3399-rock-pi-4c-plus.dts b/arch/arm/dts/rk3399-rock-pi-4c-plus.dts
 new file mode 100644
 index 0000000000..14e59f36e2
 --- /dev/null
-+++ b/arch/arm/dts/rk3399-rock-4c-plus.dts
++++ b/arch/arm/dts/rk3399-rock-pi-4c-plus.dts
 @@ -0,0 +1,805 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
@@ -858,126 +1032,6 @@ index 0000000000..14e59f36e2
 +
 +&vopl_mmu {
 +	status = "okay";
-+};
-diff --git a/arch/arm/dts/rk3399-t-opp.dtsi b/arch/arm/dts/rk3399-t-opp.dtsi
-new file mode 100644
-index 0000000000..1ababadda9
---- /dev/null
-+++ b/arch/arm/dts/rk3399-t-opp.dtsi
-@@ -0,0 +1,114 @@
-+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
-+/*
-+ * Copyright (c) 2016-2017 Fuzhou Rockchip Electronics Co., Ltd
-+ * Copyright (c) 2022 Radxa Limited
-+ */
-+
-+/ {
-+	cluster0_opp: opp-table-0 {
-+		compatible = "operating-points-v2";
-+		opp-shared;
-+
-+		opp00 {
-+			opp-hz = /bits/ 64 <408000000>;
-+			opp-microvolt = <875000 875000 1250000>;
-+			clock-latency-ns = <40000>;
-+		};
-+		opp01 {
-+			opp-hz = /bits/ 64 <600000000>;
-+			opp-microvolt = <875000 875000 1250000>;
-+		};
-+		opp02 {
-+			opp-hz = /bits/ 64 <816000000>;
-+			opp-microvolt = <900000 900000 1250000>;
-+		};
-+		opp03 {
-+			opp-hz = /bits/ 64 <1008000000>;
-+			opp-microvolt = <975000 975000 1250000>;
-+		};
-+	};
-+
-+	cluster1_opp: opp-table-1 {
-+		compatible = "operating-points-v2";
-+		opp-shared;
-+
-+		opp00 {
-+			opp-hz = /bits/ 64 <408000000>;
-+			opp-microvolt = <875000 875000 1250000>;
-+			clock-latency-ns = <40000>;
-+		};
-+		opp01 {
-+			opp-hz = /bits/ 64 <600000000>;
-+			opp-microvolt = <875000 875000 1250000>;
-+		};
-+		opp02 {
-+			opp-hz = /bits/ 64 <816000000>;
-+			opp-microvolt = <875000 875000 1250000>;
-+		};
-+		opp03 {
-+			opp-hz = /bits/ 64 <1008000000>;
-+			opp-microvolt = <925000 925000 1250000>;
-+		};
-+		opp04 {
-+			opp-hz = /bits/ 64 <1200000000>;
-+			opp-microvolt = <1000000 1000000 1250000>;
-+		};
-+		opp05 {
-+			opp-hz = /bits/ 64 <1416000000>;
-+			opp-microvolt = <1075000 1075000 1250000>;
-+		};
-+		opp06 {
-+			opp-hz = /bits/ 64 <1512000000>;
-+			opp-microvolt = <1150000 1150000 1250000>;
-+		};
-+	};
-+
-+	gpu_opp_table: opp-table-2 {
-+		compatible = "operating-points-v2";
-+
-+		opp00 {
-+			opp-hz = /bits/ 64 <200000000>;
-+			opp-microvolt = <875000 875000 1150000>;
-+		};
-+		opp01 {
-+			opp-hz = /bits/ 64 <300000000>;
-+			opp-microvolt = <875000 875000 1150000>;
-+		};
-+		opp02 {
-+			opp-hz = /bits/ 64 <400000000>;
-+			opp-microvolt = <875000 875000 1150000>;
-+		};
-+		opp03 {
-+			opp-hz = /bits/ 64 <600000000>;
-+			opp-microvolt = <975000 975000 1150000>;
-+		};
-+	};
-+};
-+
-+&cpu_l0 {
-+	operating-points-v2 = <&cluster0_opp>;
-+};
-+
-+&cpu_l1 {
-+	operating-points-v2 = <&cluster0_opp>;
-+};
-+
-+&cpu_l2 {
-+	operating-points-v2 = <&cluster0_opp>;
-+};
-+
-+&cpu_l3 {
-+	operating-points-v2 = <&cluster0_opp>;
-+};
-+
-+&cpu_b0 {
-+	operating-points-v2 = <&cluster1_opp>;
-+};
-+
-+&cpu_b1 {
-+	operating-points-v2 = <&cluster1_opp>;
-+};
-+
-+&gpu {
-+	operating-points-v2 = <&gpu_opp_table>;
 +};
 -- 
 2.40.1

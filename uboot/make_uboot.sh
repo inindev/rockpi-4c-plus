@@ -6,20 +6,21 @@ set -e
 #   1: missing utility
 
 main() {
-    local utag='v2023.04'
+    local utag='v2023.10-rc3'
     local atf_url='https://github.com/atf-builds/atf/releases/download/v2.8/rk3399_bl31.elf'
     local atf_sha='adc7cc6088d95537f8509056d21eb45b11d15d704804b0f4a34b52b21bddcb1e'
     local atf_file=$(basename $atf_url)
 
     # branch name is yyyy.mm
-    local branch="$(echo "$utag" | sed -rn 's/.*(20[2-9][3-9]\.[0-1][0-9]).*/\1/p')"
+    local branch="$(echo "$utag" | grep -Po '\d{4}\.\d{2}(.*-rc\d)*')"
     echo "${bld}branch: $branch${rst}"
 
     if is_param 'clean' "$@"; then
         rm -f *.img *.itb
         if [ -d u-boot ]; then
             #rm -f u-boot/rk3399_bl31.elf
-            rm -f u-boot/simple-bin.fit.*
+            rm -f 'u-boot/mkimage-in-simple-bin'*
+            rm -f 'u-boot/simple-bin.fit'*
             make -C u-boot distclean
             git -C u-boot clean -f
             git -C u-boot checkout master
@@ -39,14 +40,6 @@ main() {
 
     if ! git -C u-boot branch | grep -q "$branch"; then
         git -C u-boot checkout -b "$branch" "$utag"
-
-        # pci: pcie_dw_rockchip: release resources on failing probe
-        # https://github.com/u-boot/u-boot/commit/e04b67a7f4c1c326bf8c9376c0c7ba5ed9e5075d
-        git -C u-boot cherry-pick e04b67a7f4c1c326bf8c9376c0c7ba5ed9e5075d
-
-        # nvme: Enable PCI bus mastering
-        # https://github.com/u-boot/u-boot/commit/38534712cd4c4d8acdf760ee87ba219f82d738c9
-        git -C u-boot cherry-pick 38534712cd4c4d8acdf760ee87ba219f82d738c9
 
         local patch
         for patch in patches/*.patch; do
@@ -74,9 +67,9 @@ main() {
     ln -sfv u-boot/u-boot.itb
 
     # make spi image file
-    #dd bs=64K count=64 if=/dev/zero | tr '\000' '\377' > rockpi-4cplus-uboot-spi.img
-    #dd bs=4K seek=8 if=u-boot/idbloader-spi.img of=rockpi-4cplus-uboot-spi.img conv=notrunc
-    #dd bs=4K seek=512 if=u-boot/u-boot.itb of=rockpi-4cplus-uboot-spi.img conv=notrunc,fsync
+    #dd bs=64K count=64 if=/dev/zero | tr '\000' '\377' > rock-4cplus-uboot-spi.img
+    #dd bs=4K seek=8 if=u-boot/idbloader-spi.img of=rock-4cplus-uboot-spi.img conv=notrunc
+    #dd bs=4K seek=512 if=u-boot/u-boot.itb of=rock-4cplus-uboot-spi.img conv=notrunc,fsync
 
     is_param 'cp' "$@" && cp_to_debian
 
