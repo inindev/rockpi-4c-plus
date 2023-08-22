@@ -20,6 +20,7 @@ package-%: all
 	@rm -rfv distfiles
 	@mkdir -v distfiles
 
+	@cp -v uboot/idbloader-spi.img uboot/u-boot.itb distfiles
 	@cp -v uboot/idbloader.img uboot/u-boot.itb distfiles
 	@cp -v dtb/rk3399-rock-4c-plus.dtb distfiles
 	@cp -v debian/mmc_2g.img distfiles/rockpi-4c-plus_$(LDIST)-$*.img
