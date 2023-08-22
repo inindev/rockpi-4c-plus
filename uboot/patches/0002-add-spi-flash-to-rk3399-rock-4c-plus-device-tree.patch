@@ -1,7 +1,7 @@
 From 795755a2e234b5289ac88b1ba8690d796d1c4904 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Wed, 5 Apr 2023 07:43:23 -0400
-Subject: [PATCH 2/3] add spi flash to rk3399-rock-4c-plus device tree
+Subject: [PATCH 2/4] add spi flash to rk3399-rock-4c-plus device tree
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---

@@ -1,7 +1,7 @@
 From 917ed51651090815e44ffac503cc21bf5c2d3b75 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Tue, 22 Aug 2023 00:36:39 +0000
-Subject: [PATCH 3/3] u-boot config for the rock-4c-plus
+Subject: [PATCH 3/4] u-boot config for the rock-4c-plus
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
