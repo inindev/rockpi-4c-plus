@@ -11,7 +11,7 @@ main() {
     local atf_sha='adc7cc6088d95537f8509056d21eb45b11d15d704804b0f4a34b52b21bddcb1e'
     local atf_file=$(basename $atf_url)
 
-    # branch name is yyyy.mm
+    # branch name is yyyy.mm[-rc]
     local branch="$(echo "$utag" | grep -Po '\d{4}\.\d{2}(.*-rc\d)*')"
     echo "${bld}branch: $branch${rst}"
 
