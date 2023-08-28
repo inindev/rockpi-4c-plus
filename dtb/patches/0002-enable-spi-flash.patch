@@ -1,7 +1,7 @@
 From 31dc76b56d312a9fc6d09a5329694e5afea646ff Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Sun, 30 Jul 2023 22:37:38 +0000
-Subject: [PATCH 3/3] enable spi flash
+Subject: enable spi flash
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
